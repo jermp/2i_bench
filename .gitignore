@@ -1,0 +1,16 @@
+build/
+data/
+ds2i_config.hpp
+
+# Python junk
+*.pyc
+
+# CMake junk
+CMakeCache.txt
+CMakeFiles/
+*.cmake
+Makefile
+Testing/
+
+# Mac junk
+.DS_Store
