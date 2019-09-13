@@ -1,0 +1,15 @@
+[submodule "external/streamvbyte"]
+	path = external/streamvbyte
+	url = https://github.com/lemire/streamvbyte.git
+[submodule "external/MaskedVByte"]
+	path = external/MaskedVByte
+	url = https://github.com/lemire/MaskedVByte.git
+[submodule "external/FastPFor"]
+	path = external/FastPFor
+	url = https://github.com/ot/FastPFor.git
+[submodule "external/s_indexes"]
+	path = external/s_indexes
+	url = https://github.com/jermp/s_indexes.git
+[submodule "external/succinct"]
+	path = external/succinct
+	url = https://github.com/ot/succinct.git
