@@ -14,8 +14,8 @@
 #include "../external/s_indexes/include/s_index.hpp"
 #include "../external/s_indexes/include/decode.hpp"
 
-#define INDEXES                                                         \
-    (pef_uniform)(pef_opt)(bic)(maskedvbyte)(optpfor)(simple16)(delta)( \
+#define INDEXES                                                              \
+    (pef_uniform)(pef_opt)(bic)(maskedvbyte)(optpfor)(simple16)(qmx)(delta)( \
         single_packed_dint)(opt_vbyte)
 
 void perftest_slicing(char const* index_filename) {

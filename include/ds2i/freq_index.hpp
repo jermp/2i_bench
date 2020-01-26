@@ -40,7 +40,6 @@ public:
             m_queue.complete();
             sq.m_num_docs = m_num_docs;
             sq.m_params = m_params;
-
             m_docs_sequences.build(sq.m_docs_sequences);
             m_freqs_sequences.build(sq.m_freqs_sequences);
         }

@@ -106,12 +106,14 @@ void dump_stats(Collection& coll, std::string const& type, uint64_t postings) {
 
     double bits_per_doc = docs_size * 8.0 / postings;
     double bits_per_freq = freqs_size * 8.0 / postings;
-    logger() << "Documents: " << docs_size << " bytes, " << bits_per_doc
+    logger() << "Documents: " << docs_size << " bytes ("
+             << double(docs_size) / constants::GiB << " GiB), " << bits_per_doc
              << " bits per element" << std::endl;
-    logger() << "Frequencies: " << freqs_size << " bytes, " << bits_per_freq
-             << " bits per element" << std::endl;
+    logger() << "Frequencies: " << freqs_size << " bytes ("
+             << double(freqs_size) / constants::GiB << " GiB), "
+             << bits_per_freq << " bits per element" << std::endl;
     logger() << "Index size: " << double(total_index_size) / constants::GiB
-             << " [GiB]" << std::endl;
+             << " GiB" << std::endl;
 
     stats_line()("type", type)("size", total_index_size)(
         "docs_size", docs_size)("freqs_size", freqs_size)(

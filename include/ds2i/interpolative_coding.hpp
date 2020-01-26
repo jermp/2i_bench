@@ -17,8 +17,7 @@ public:
     }
 
     void write(uint32_t bits, uint32_t len) {
-        if (!len)
-            return;
+        if (!len) return;
         uint32_t pos_in_word = m_size % 32;
         m_size += len;
         if (pos_in_word == 0) {
@@ -54,10 +53,8 @@ public:
 
     void write_interpolative(uint32_t const* in, size_t n, uint32_t low,
                              uint32_t high) {
-        if (!n)
-            return;
+        if (!n) return;
         assert(low <= high);
-
         size_t h = n / 2;
         uint32_t val = in[h];
         write_int(val - low, high - low + 1);
@@ -84,9 +81,7 @@ public:
     }
 
     uint32_t read(uint32_t len) {
-        if (!len)
-            return 0;
-
+        if (!len) return 0;
         if (m_avail < len) {
             m_buf |= uint64_t(*m_in++) << m_avail;
             m_avail += 32;
@@ -95,7 +90,6 @@ public:
         m_buf >>= len;
         m_avail -= len;
         m_pos += len;
-
         return val;
     }
 
@@ -103,12 +97,10 @@ public:
         assert(u > 0);
         auto b = succinct::broadword::msb(u);
         uint64_t m = (uint64_t(1) << (b + 1)) - u;
-
         uint32_t val = read(b);
         if (val >= m) {
             val = (val << 1) + read(1) - m;
         }
-
         assert(val < u);
         return val;
     }

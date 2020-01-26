@@ -23,41 +23,25 @@ void op_perftest(IndexType const& index,
     std::vector<double> query_times;
     size_t total = 0;
     for (size_t run = 0; run != runs; ++run) {
+        auto tick = get_time_usecs();
         for (auto const& query : queries) {
-            auto tick = get_time_usecs();
             uint64_t results = query_op(index, query);
             // do_not_optimize_away(results);
             total += results;
-            double elapsed = double(get_time_usecs() - tick);
-            if (run != 0) {  // first run is not timed
-                query_times.push_back(elapsed);
-            }
+        }
+        double elapsed = double(get_time_usecs() - tick);
+        if (run != 0) {  // first run is not timed
+            query_times.push_back(elapsed);
         }
     }
 
     std::cout << total << std::endl;
 
-    if (false) {
-        for (auto t : query_times) {
-            std::cout << (t / 1000) << std::endl;
-        }
-    } else {
-        std::sort(query_times.begin(), query_times.end());
-        double avg =
-            std::accumulate(query_times.begin(), query_times.end(), double()) /
-            query_times.size();
-        double q50 = query_times[query_times.size() / 2];
-        double q90 = query_times[90 * query_times.size() / 100];
-        double q95 = query_times[95 * query_times.size() / 100];
-        // logger() << "---- " << index_type << " " << query_type;
-        // logger() << "Mean: " << avg;
-        // logger() << "50% quantile: " << q50;
-        // logger() << "90% quantile: " << q90;
-        // logger() << "95% quantile: " << q95;
-
-        stats_line()("type", index_type)("query", query_type)("avg", avg)(
-            "q50", q50)("q90", q90)("q95", q95);
-    }
+    double avg_per_run =
+        std::accumulate(query_times.begin(), query_times.end(), double(0.0)) /
+        query_times.size();
+    stats_line()("type", index_type)("query", query_type)(
+        "avg_musec_per_query", avg_per_run / queries.size());
 }
 
 template <typename IndexType>

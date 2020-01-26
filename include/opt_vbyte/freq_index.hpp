@@ -3,6 +3,7 @@
 #include "bitvector_collection.hpp"
 #include "compact_elias_fano.hpp"
 #include "configuration.hpp"
+#include "ds2i/semiasync_queue.hpp"
 #include "decode.hpp"
 
 namespace pvb {
@@ -15,7 +16,8 @@ struct freq_index {
 
     struct builder {
         builder(uint64_t num_docs, ds2i::global_parameters const& params)
-            : m_params(params)
+            : m_queue(1 << 24)
+            , m_params(params)
             , m_num_docs(num_docs)
             , m_docs_sequences(params)
             , m_freqs_sequences(params) {}
@@ -24,34 +26,42 @@ struct freq_index {
         void add_posting_list(uint64_t n, DocsIterator docs_begin,
                               FreqsIterator freqs_begin, uint64_t occurrences) {
             if (!n) throw std::invalid_argument("List must be nonempty");
+            std::shared_ptr<list_adder<DocsIterator, FreqsIterator>> ptr(
+                new list_adder<DocsIterator, FreqsIterator>(
+                    *this, docs_begin, freqs_begin, occurrences, n));
+            m_queue.add_job(ptr, 2 * n);
 
-            configuration conf;
-            task_region(*conf.executor, [&](task_region_handle& trh) {
-                trh.run([&] {
-                    succinct::bit_vector_builder docs_bits;
-                    ds2i::write_gamma_nonzero(docs_bits, occurrences);
-                    if (occurrences > 1) {
-                        docs_bits.append_bits(n, ceil_log2(occurrences + 1));
-                    }
-                    DocsSequence::write(docs_bits, docs_begin, m_num_docs, n,
-                                        m_params);
-                    push_pad(docs_bits, alignment);
-                    assert(docs_bits.size() % alignment == 0);
-                    m_docs_sequences.append(docs_bits);
-                });
+            // if (!n) throw std::invalid_argument("List must be nonempty");
 
-                succinct::bit_vector_builder freqs_bits;
-                FreqsSequence::write(freqs_bits, freqs_begin, occurrences + 1,
-                                     n, m_params);
-                push_pad(freqs_bits, alignment);
-                assert(freqs_bits.size() % alignment == 0);
-                m_freqs_sequences.append(freqs_bits);
-            });
+            // configuration conf;
+            // task_region(*conf.executor, [&](task_region_handle& trh) {
+            //     trh.run([&] {
+            //         succinct::bit_vector_builder docs_bits;
+            //         ds2i::write_gamma_nonzero(docs_bits, occurrences);
+            //         if (occurrences > 1) {
+            //             docs_bits.append_bits(n, ceil_log2(occurrences + 1));
+            //         }
+            //         DocsSequence::write(docs_bits, docs_begin, m_num_docs, n,
+            //                             m_params);
+            //         push_pad(docs_bits, alignment);
+            //         assert(docs_bits.size() % alignment == 0);
+            //         m_docs_sequences.append(docs_bits);
+            //     });
+
+            //     succinct::bit_vector_builder freqs_bits;
+            //     FreqsSequence::write(freqs_bits, freqs_begin, occurrences +
+            //     1,
+            //                          n, m_params);
+            //     push_pad(freqs_bits, alignment);
+            //     assert(freqs_bits.size() % alignment == 0);
+            //     m_freqs_sequences.append(freqs_bits);
+            // });
         }
 
         void build_model(std::string const&) {}
 
         void build(freq_index& sq) {
+            m_queue.complete();
             sq.m_num_docs = m_num_docs;
             sq.m_params = m_params;
             m_docs_sequences.build(sq.m_docs_sequences);
@@ -59,6 +69,45 @@ struct freq_index {
         }
 
     private:
+        template <typename DocsIterator, typename FreqsIterator>
+        struct list_adder : ds2i::semiasync_queue::job {
+            list_adder(builder& b, DocsIterator docs_begin,
+                       FreqsIterator freqs_begin, uint64_t occurrences,
+                       uint64_t n)
+                : b(b)
+                , docs_begin(docs_begin)
+                , freqs_begin(freqs_begin)
+                , occurrences(occurrences)
+                , n(n) {}
+
+            virtual void prepare() {
+                ds2i::write_gamma_nonzero(docs_bits, occurrences);
+                if (occurrences > 1) {
+                    docs_bits.append_bits(n, ceil_log2(occurrences + 1));
+                }
+
+                DocsSequence::write(docs_bits, docs_begin, b.m_num_docs, n,
+                                    b.m_params);
+
+                FreqsSequence::write(freqs_bits, freqs_begin, occurrences + 1,
+                                     n, b.m_params);
+            }
+
+            virtual void commit() {
+                b.m_docs_sequences.append(docs_bits);
+                b.m_freqs_sequences.append(freqs_bits);
+            }
+
+            builder& b;
+            DocsIterator docs_begin;
+            FreqsIterator freqs_begin;
+            uint64_t occurrences;
+            uint64_t n;
+            succinct::bit_vector_builder docs_bits;
+            succinct::bit_vector_builder freqs_bits;
+        };
+
+        ds2i::semiasync_queue m_queue;
         ds2i::global_parameters m_params;
         uint64_t m_num_docs;
         ds2i::bitvector_collection::builder m_docs_sequences;

@@ -27,23 +27,22 @@ public:
         void add_posting_list(uint64_t n, DocsIterator docs_begin,
                               FreqsIterator freqs_begin,
                               uint64_t /* occurrences */) {
-            if (!n)
-                throw std::invalid_argument("List must be nonempty");
-            block_posting_list<BlockCodec, Profile>::write(
-                m_lists, n, docs_begin, freqs_begin);
-            m_endpoints.push_back(m_lists.size());
+            // if (!n)
+            //     throw std::invalid_argument("List must be nonempty");
+            // block_posting_list<BlockCodec, Profile>::write(
+            //     m_lists, n, docs_begin, freqs_begin);
+            // m_endpoints.push_back(m_lists.size());
 
-            // if (!n) throw std::invalid_argument("List must be nonempty");
-            // std::shared_ptr<list_adder<DocsIterator, FreqsIterator>>
-            //     ptr(new list_adder<DocsIterator, FreqsIterator>
-            //         (*this, docs_begin, freqs_begin, n));
-            // m_queue.add_job(ptr, 2 * n);
+            if (!n) throw std::invalid_argument("List must be nonempty");
+            std::shared_ptr<list_adder<DocsIterator, FreqsIterator>> ptr(
+                new list_adder<DocsIterator, FreqsIterator>(*this, docs_begin,
+                                                            freqs_begin, n));
+            m_queue.add_job(ptr, 2 * n);
         }
 
         template <typename BlockDataRange>
         void add_posting_list(uint64_t n, BlockDataRange const& blocks) {
-            if (!n)
-                throw std::invalid_argument("List must be nonempty");
+            if (!n) throw std::invalid_argument("List must be nonempty");
             block_posting_list<BlockCodec>::write_blocks(m_lists, n, blocks);
             m_endpoints.push_back(m_lists.size());
         }

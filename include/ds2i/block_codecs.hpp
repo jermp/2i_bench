@@ -179,8 +179,7 @@ struct optpfor_block {
                       // greater than 28
 
             for (; i < possLogs.size(); i++) {
-                if (possLogs[i] > mb && possLogs[i] >= mb)
-                    break;
+                if (possLogs[i] > mb && possLogs[i] >= mb) break;
                 const uint32_t csize = tryB(possLogs[i], in, len);
 
                 if (csize <= bsize) {
@@ -534,9 +533,7 @@ struct gamma_block {
                        size_t n, std::vector<uint8_t>& out) {
         assert(n <= block_size);
         succinct::bit_vector_builder bvb;
-        for (size_t i = 0; i != n; ++i, ++in) {
-            write_gamma(bvb, *in);
-        }
+        for (size_t i = 0; i != n; ++i, ++in) write_gamma(bvb, *in);
         auto const& bits = bvb.move_bits();
         uint8_t const* bufptr = (uint8_t const*)bits.data();
         uint64_t num_bytes = succinct::util::ceil_div(bvb.size(), 8);
@@ -546,9 +543,30 @@ struct gamma_block {
     static uint8_t const* decode(uint8_t const* in, uint32_t* out,
                                  uint32_t /* sum_of_values */, size_t n) {
         bits_enumerator it(reinterpret_cast<uint64_t const*>(in));
-        for (size_t i = 0; i != n; ++i, ++out) {
-            *out = read_gamma(it);
-        }
+        for (size_t i = 0; i != n; ++i, ++out) *out = read_gamma(it);
+        return in + succinct::util::ceil_div(it.position(), 8);
+    }
+};
+
+struct lex_gamma_block {
+    static const uint64_t block_size = constants::block_size;
+    static const uint64_t overflow = 0;
+
+    static void encode(uint32_t const* in, uint32_t /* sum_of_values */,
+                       size_t n, std::vector<uint8_t>& out) {
+        assert(n <= block_size);
+        succinct::bit_vector_builder bvb;
+        for (size_t i = 0; i != n; ++i, ++in) write_lex_gamma(bvb, *in);
+        auto const& bits = bvb.move_bits();
+        uint8_t const* bufptr = (uint8_t const*)bits.data();
+        uint64_t num_bytes = succinct::util::ceil_div(bvb.size(), 8);
+        out.insert(out.end(), bufptr, bufptr + num_bytes);
+    }
+
+    static uint8_t const* decode(uint8_t const* in, uint32_t* out,
+                                 uint32_t /* sum_of_values */, size_t n) {
+        bits_enumerator it(reinterpret_cast<uint64_t const*>(in));
+        for (size_t i = 0; i != n; ++i, ++out) *out = read_lex_gamma(it);
         return in + succinct::util::ceil_div(it.position(), 8);
     }
 };
@@ -561,9 +579,7 @@ struct delta_block {
                        size_t n, std::vector<uint8_t>& out) {
         assert(n <= block_size);
         succinct::bit_vector_builder bvb;
-        for (size_t i = 0; i != n; ++i, ++in) {
-            write_delta(bvb, *in);
-        }
+        for (size_t i = 0; i != n; ++i, ++in) write_delta(bvb, *in);
         auto const& bits = bvb.move_bits();
         uint8_t const* bufptr = (uint8_t const*)bits.data();
         uint64_t num_bytes = succinct::util::ceil_div(bvb.size(), 8);
@@ -573,9 +589,30 @@ struct delta_block {
     static uint8_t const* decode(uint8_t const* in, uint32_t* out,
                                  uint32_t /* sum_of_values */, size_t n) {
         bits_enumerator it(reinterpret_cast<uint64_t const*>(in));
-        for (size_t i = 0; i != n; ++i, ++out) {
-            *out = read_delta(it);
-        }
+        for (size_t i = 0; i != n; ++i, ++out) *out = read_delta(it);
+        return in + succinct::util::ceil_div(it.position(), 8);
+    }
+};
+
+struct lex_delta_block {
+    static const uint64_t block_size = constants::block_size;
+    static const uint64_t overflow = 0;
+
+    static void encode(uint32_t const* in, uint32_t /* sum_of_values */,
+                       size_t n, std::vector<uint8_t>& out) {
+        assert(n <= block_size);
+        succinct::bit_vector_builder bvb;
+        for (size_t i = 0; i != n; ++i, ++in) write_lex_delta(bvb, *in);
+        auto const& bits = bvb.move_bits();
+        uint8_t const* bufptr = (uint8_t const*)bits.data();
+        uint64_t num_bytes = succinct::util::ceil_div(bvb.size(), 8);
+        out.insert(out.end(), bufptr, bufptr + num_bytes);
+    }
+
+    static uint8_t const* decode(uint8_t const* in, uint32_t* out,
+                                 uint32_t /* sum_of_values */, size_t n) {
+        bits_enumerator it(reinterpret_cast<uint64_t const*>(in));
+        for (size_t i = 0; i != n; ++i, ++out) *out = read_lex_delta(it);
         return in + succinct::util::ceil_div(it.position(), 8);
     }
 };

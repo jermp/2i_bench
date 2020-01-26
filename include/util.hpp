@@ -29,7 +29,7 @@
 namespace ds2i {
 
 namespace constants {
-static const uint64_t min_size = 0;  // 4096
+static const uint64_t min_size = 4096;
 static const uint32_t block_size = 128;
 const static uint64_t GiB = 1073741824;
 const static uint64_t MiB = 1048576;

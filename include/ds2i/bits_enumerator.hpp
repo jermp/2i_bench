@@ -1,5 +1,6 @@
 #pragma once
 
+#include <bitset>
 #include "succinct/broadword.hpp"
 
 namespace ds2i {
@@ -12,8 +13,7 @@ struct bits_enumerator {
         , m_avail(0) {}
 
     inline bool next() {
-        if (!m_avail)
-            fill_buf();
+        if (!m_avail) fill_buf();
         bool b = m_buf & 1;
         m_buf >>= 1;
         --m_avail;
@@ -22,8 +22,7 @@ struct bits_enumerator {
     }
 
     inline uint64_t take(size_t l) {
-        if (m_avail < l)
-            fill_buf();
+        if (m_avail < l) fill_buf();
         uint64_t val;
         if (l != 64) {
             val = m_buf & ((uint64_t(1) << l) - 1);
@@ -36,11 +35,12 @@ struct bits_enumerator {
         return val;
     }
 
+    // return the number of skipped 0 bits
     inline uint64_t skip_zeros() {
-        uint64_t zs = 0;
+        uint64_t zeros = 0;
         while (!m_buf) {
             m_pos += m_avail;
-            zs += m_avail;
+            zeros += m_avail;
             m_avail = 0;
             fill_buf();
         }
@@ -50,7 +50,35 @@ struct bits_enumerator {
         m_buf >>= 1;
         m_avail -= l + 1;
         m_pos += l + 1;
-        return zs + l;
+        return zeros + l;
+    }
+
+    // return the number of skipped 1 bits
+    inline uint64_t skip_ones() {
+        assert(m_avail < 64);
+        uint64_t ones = 0;
+
+        if (m_buf == ((uint64_t(1) << m_avail) - 1)) {
+            m_pos += m_avail;
+            ones += m_avail;
+            m_avail = 0;
+            fill_buf();
+        }
+
+        while (m_buf == uint64_t(-1)) {
+            m_pos += 64;
+            ones += 64;
+            fill_buf();
+        }
+
+        uint64_t l = succinct::broadword::lsb(~m_buf);
+        m_buf >>= l;
+        m_buf >>= 1;
+        assert(m_avail >= l + 1);
+        m_avail -= l + 1;
+        m_pos += l + 1;
+
+        return ones + l;
     }
 
     inline uint64_t position() const {
@@ -79,4 +107,5 @@ private:
     uint64_t m_buf;
     uint64_t m_avail;
 };
+
 }  // namespace ds2i
