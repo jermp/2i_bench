@@ -45,6 +45,8 @@ struct bits_enumerator {
             fill_buf();
         }
 
+        // XXX: is a table faster here, assuming the longest
+        // unary code is 00000001 ?
         uint64_t l = succinct::broadword::lsb(m_buf);
         m_buf >>= l;
         m_buf >>= 1;
@@ -52,49 +54,6 @@ struct bits_enumerator {
         m_pos += l + 1;
         return zeros + l;
     }
-
-    // // return the number of skipped 1 bits
-    // inline uint64_t skip_ones() {
-    //     assert(m_avail < 64);
-    //     uint64_t ones = 0;
-
-    //     if (m_buf == ((uint64_t(1) << m_avail) - 1)) {
-    //         m_pos += m_avail;
-    //         ones += m_avail;
-    //         m_avail = 0;
-    //         fill_buf();
-    //     }
-
-    //     while (m_buf == uint64_t(-1)) {
-    //         m_pos += 64;
-    //         ones += 64;
-    //         fill_buf();
-    //     }
-
-    //     uint64_t l = succinct::broadword::lsb(~m_buf);
-    //     m_buf >>= l;
-    //     m_buf >>= 1;
-    //     assert(m_avail >= l + 1);
-    //     m_avail -= l + 1;
-    //     m_pos += l + 1;
-
-    //     return ones + l;
-    // }
-
-    // /* Return the number of skipped 1 bits using a table.
-    // Assumes that at most 7 ones can be skipped,
-    // which is valid when, for example, lexicographic delta codes
-    // are used (since a gap fits in 32 bits). */
-    // inline uint64_t skip_ones_max8() {
-    //     assert(m_avail < 64);
-    //     uint64_t index = m_buf & 255;
-    //     uint64_t l = tables::ones_max8[index];
-    //     m_buf >>= l + 1;
-    //     assert(m_avail >= l + 1);
-    //     m_avail -= l + 1;
-    //     m_pos += l + 1;
-    //     return l;
-    // }
 
     inline uint64_t position() const {
         return m_pos;

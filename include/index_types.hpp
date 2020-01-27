@@ -58,11 +58,8 @@ typedef pvb::opt_vb opt_vbyte_index;
 
 // universal-code-based indexes
 typedef block_freq_index<gamma_block> gamma_index;
-// typedef block_freq_index<lex_gamma_block> lex_gamma_index;
 typedef block_freq_index<delta_block> delta_index;
 typedef block_freq_index<delta_table_block> delta_table_index;
-// typedef block_freq_index<lex_delta_block> lex_delta_index;
-// typedef block_freq_index<lex_delta_table_block> lex_delta_table_index;
 typedef block_freq_index<rice_block> rice_index;
 typedef block_freq_index<zeta_block> zeta_index;
 
