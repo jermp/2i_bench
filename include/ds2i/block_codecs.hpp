@@ -17,6 +17,7 @@
 #include "succinct/util.hpp"
 #include "integer_codes.hpp"
 #include "util.hpp"
+#include "tables.hpp"
 
 namespace ds2i {
 
@@ -614,6 +615,47 @@ struct lex_delta_block {
         bits_enumerator it(reinterpret_cast<uint64_t const*>(in));
         for (size_t i = 0; i != n; ++i, ++out) *out = read_lex_delta(it);
         return in + succinct::util::ceil_div(it.position(), 8);
+    }
+};
+
+struct lex_delta_table_block {
+    static const uint64_t block_size = constants::block_size;
+    static const uint64_t overflow = 0;
+
+    static void encode(uint32_t const* in, uint32_t /* sum_of_values */,
+                       size_t n, std::vector<uint8_t>& out) {
+        assert(n <= block_size);
+        succinct::bit_vector_builder bvb;
+        for (size_t i = 0; i != n; ++i, ++in) write_lex_delta(bvb, *in);
+        auto const& bits = bvb.move_bits();
+        uint8_t const* bufptr = (uint8_t const*)bits.data();
+        uint64_t num_bytes = succinct::util::ceil_div(bvb.size(), 8);
+        TightVariableByte::encode_single(num_bytes, out);
+        out.insert(out.end(), bufptr, bufptr + num_bytes);
+    }
+
+    static uint8_t const* decode(uint8_t const* in, uint32_t* out,
+                                 uint32_t /* sum_of_values */, size_t n) {
+        uint32_t enc_len = 0;
+        in = TightVariableByte::decode(in, &enc_len, 1);
+        bits_enumerator it(reinterpret_cast<uint64_t const*>(in));
+        uint64_t buffer = it.take(64);
+        for (size_t i = 0; i != n; ++i, ++out) {
+            uint64_t len = 0;
+            if ((buffer & 7) != 7) {
+                uint64_t index = (buffer & 2047) * 2;
+                *out = tables::lex_delta_table2048[index];
+                len = tables::lex_delta_table2048[index + 1];
+            } else {
+                bits_enumerator tmp(&buffer);
+                *out = read_lex_delta(tmp);
+                len = tmp.position();
+            }
+            assert(len > 0 and len < 64);
+            buffer >>= len;
+            buffer |= it.take(len) << (64 - len);
+        }
+        return in + enc_len;
     }
 };
 
