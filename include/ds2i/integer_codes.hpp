@@ -5,44 +5,44 @@
 
 namespace ds2i {
 
-/* Here the unary code for n is: 1^{n-1}.0
-For example: U(5) = 11110 */
-void write_lex_unary_nonzero(succinct::bit_vector_builder& bvb, uint64_t n) {
-    assert(n > 0);
-    uint64_t hb = (uint64_t(1) << (n - 1)) - 1;
-    bvb.append_bits(hb, n);
-}
+// /* Here the unary code for n is: 1^{n-1}.0
+// For example: U(5) = 11110 */
+// void write_lex_unary_nonzero(succinct::bit_vector_builder& bvb, uint64_t n) {
+//     assert(n > 0);
+//     uint64_t hb = (uint64_t(1) << (n - 1)) - 1;
+//     bvb.append_bits(hb, n);
+// }
 
-uint64_t read_lex_unary_nonzero(bits_enumerator& it) {
-    return it.skip_ones() + 1;
-}
+// uint64_t read_lex_unary_nonzero(bits_enumerator& it) {
+//     return it.skip_ones() + 1;
+// }
 
-void write_lex_gamma(succinct::bit_vector_builder& bvb, uint64_t n) {
-    n += 1;
-    uint64_t l = succinct::broadword::msb(n);
-    write_lex_unary_nonzero(bvb, l + 1);
-    uint64_t lsbits = n & ((uint64_t(1) << l) - 1);
-    bvb.append_bits(lsbits, l);
-}
+// void write_lex_gamma(succinct::bit_vector_builder& bvb, uint64_t n) {
+//     n += 1;
+//     uint64_t l = succinct::broadword::msb(n);
+//     write_lex_unary_nonzero(bvb, l + 1);
+//     uint64_t lsbits = n & ((uint64_t(1) << l) - 1);
+//     bvb.append_bits(lsbits, l);
+// }
 
-uint64_t read_lex_gamma(bits_enumerator& it) {
-    uint64_t l = read_lex_unary_nonzero(it);
-    assert(l > 0);
-    return (it.take(l - 1) | (uint64_t(1) << (l - 1))) - 1;
-}
+// uint64_t read_lex_gamma(bits_enumerator& it) {
+//     uint64_t l = read_lex_unary_nonzero(it);
+//     assert(l > 0);
+//     return (it.take(l - 1) | (uint64_t(1) << (l - 1))) - 1;
+// }
 
-void write_lex_delta(succinct::bit_vector_builder& bvb, uint64_t n) {
-    n += 1;
-    uint64_t l = succinct::broadword::msb(n);
-    write_lex_gamma(bvb, l);
-    uint64_t lsbits = n & ((uint64_t(1) << l) - 1);
-    bvb.append_bits(lsbits, l);
-}
+// void write_lex_delta(succinct::bit_vector_builder& bvb, uint64_t n) {
+//     n += 1;
+//     uint64_t l = succinct::broadword::msb(n);
+//     write_lex_gamma(bvb, l);
+//     uint64_t lsbits = n & ((uint64_t(1) << l) - 1);
+//     bvb.append_bits(lsbits, l);
+// }
 
-uint64_t read_lex_delta(bits_enumerator& it) {
-    uint64_t l = read_lex_gamma(it);
-    return (it.take(l) | (uint64_t(1) << l)) - 1;
-}
+// uint64_t read_lex_delta(bits_enumerator& it) {
+//     uint64_t l = read_lex_gamma(it);
+//     return (it.take(l) | (uint64_t(1) << l)) - 1;
+// }
 
 /* Here the unary code for n is: 0^n.1
 For example: U(5) = 000001 */
