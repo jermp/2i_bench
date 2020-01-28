@@ -2,7 +2,7 @@
 
 #include "succinct/bit_vector.hpp"
 #include "succinct/util.hpp"
-
+#include "../ds2i/block_codecs.hpp"
 #include "util.hpp"
 
 namespace pvb {
@@ -57,19 +57,16 @@ struct maskedvbyte_block {
         }
     }
 
-    static void encode(uint32_t const* in, uint32_t sum_of_values, size_t n,
+    static void encode(uint32_t const* in, uint32_t /*sum_of_values*/, size_t n,
                        std::vector<uint8_t>& out) {
-        (void)sum_of_values;
-        size_t size = n;
         uint32_t* src = const_cast<uint32_t*>(in);
-        std::vector<uint8_t> buf(2 * size * sizeof(uint32_t));
-        size_t out_len = vbyte_encode(src, size, buf.data());
+        std::vector<uint8_t> buf(2 * n * sizeof(uint32_t));
+        size_t out_len = vbyte_encode(src, n, buf.data());
         out.insert(out.end(), buf.data(), buf.data() + out_len);
     }
 
     static uint8_t const* decode(uint8_t const* in, uint32_t* out,
-                                 uint32_t sum_of_values, size_t n) {
-        (void)sum_of_values;
+                                 uint32_t /*sum_of_values*/, size_t n) {
         auto read = masked_vbyte_decode(in, out, n);
         return in + read;
     }
