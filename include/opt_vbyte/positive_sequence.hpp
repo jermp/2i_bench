@@ -20,7 +20,9 @@ struct positive_sequence {
         auto it = begin;
         prefixes.push_back(*it);
         ++it;
-        for (uint64_t i = 1; i < n; ++i, ++it) {
+        // NOTE: compute prefix-sums because than we take the gaps
+        // with base_sequence_type::write()
+        for (uint64_t i = 1; i != n; ++i, ++it) {
             prefixes.push_back(prefixes.back() + *it);
         }
         base_sequence_type::write(bvb, prefixes.begin(), universe, n, params);

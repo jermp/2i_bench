@@ -25,7 +25,7 @@ struct block_sequence {
             m_ptr =
                 reinterpret_cast<uint8_t const*>(bv.data().data()) + offset / 8;
             decode_next_block();
-            m_value = m_buffer[0];
+            m_value = m_buffer[0] + 1;
         }
 
         void decode_next_block() {
@@ -49,15 +49,12 @@ struct block_sequence {
             }
 
             uint64_t block = pos / BlockCodec::block_size;
-
             if (DS2I_UNLIKELY(block != m_cur_block)) {
-                while (m_cur_block < block) {
-                    decode_next_block();
-                }
+                while (m_cur_block < block) decode_next_block();
             }
 
             while (position() != pos) {
-                m_value += m_buffer[++m_pos_in_block];
+                m_value += m_buffer[++m_pos_in_block] + 1;
             }
 
             return value_type(position(), m_value);
@@ -69,7 +66,7 @@ struct block_sequence {
                 if (m_pos_in_block == BlockCodec::block_size) {
                     decode_next_block();
                 }
-                m_value += m_buffer[m_pos_in_block];
+                m_value += m_buffer[m_pos_in_block] + 1;
             }
             if (DS2I_UNLIKELY(position() == size())) {
                 m_value = m_universe;
@@ -83,7 +80,7 @@ struct block_sequence {
                 if (m_pos_in_block == BlockCodec::block_size) {
                     decode_next_block();
                 }
-                m_value += m_buffer[m_pos_in_block];
+                m_value += m_buffer[m_pos_in_block] + 1;
             } else {
                 m_value = m_universe;
             }
