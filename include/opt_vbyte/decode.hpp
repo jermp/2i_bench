@@ -6,7 +6,7 @@
 
 namespace pvb {
 
-template <typename Iterator>
+template <typename Encoder, typename Iterator>
 uint32_t decode_sequence(Iterator& it, uint32_t* out) {
     uint32_t partitions = it.m_partitions;
     if (partitions == 1) {
@@ -22,9 +22,7 @@ uint32_t decode_sequence(Iterator& it, uint32_t* out) {
 
     uint32_t* in = out;
     compact_ranked_bitvector::enumerator bv_enum;
-    typedef block_sequence<maskedvbyte_block> block_sequence_t;
-    typedef indexed_sequence<maskedvbyte_block> indexed_sequence_t;
-    block_sequence_t::enumerator vb_enum;
+    typedef indexed_sequence<Encoder> indexed_sequence_t;
     static const uint64_t type_bits = indexed_sequence_t::type_bits;
 
     for (uint32_t p = 0; p != partitions; ++p) {
@@ -52,7 +50,19 @@ uint32_t decode_sequence(Iterator& it, uint32_t* out) {
                     reinterpret_cast<uint8_t const*>((it.m_bv)->data().data()) +
                     offset / 8;
                 uint64_t universe = it.m_cur_upper_bound - it.m_cur_base + 1;
-                maskedvbyte_block::decode(addr, out, universe, n);
+
+                if (Encoder::is_byte_aligned) {
+                    Encoder::decode(addr, out, universe, n);
+                } else {
+                    uint32_t blocks = n / Encoder::block_size;
+                    for (uint32_t i = 0; i != blocks; ++i) {
+                        addr = Encoder::decode(addr, out, universe,
+                                               Encoder::block_size);
+                    }
+                    uint32_t tail = n - blocks * Encoder::block_size;
+                    Encoder::decode(addr, out, universe, tail);
+                }
+
             } break;
             default:
                 assert(false);

@@ -62,6 +62,7 @@ typedef block_freq_index<delta_block> delta_index;
 typedef block_freq_index<delta_table_block> delta_table_index;
 typedef block_freq_index<rice_block> rice_index;
 typedef block_freq_index<zeta_block> zeta_index;
+typedef pvb::opt_delta opt_delta_index;
 
 // DINT-based indexes
 using adjusted_collector_type = adjusted<constants::max_entry_size>;
@@ -87,8 +88,8 @@ using multi_packed_dint_index =
     dict_freq_index<multi_packed_builder, opt_dint_multi_dict_block>;
 }  // namespace ds2i
 
-#define DS2I_INDEX_TYPES                                                  \
-    (ef)(pef_uniform)(pef_opt)(optpfor)(bic)(qmx)(simple9)(simple16)(     \
-        simple8b)(vbyte)(varintg8iu)(varintgb)(maskedvbyte)(streamvbyte)( \
-        gamma)(delta)(delta_table)(rice)(zeta)(single_rect_dint)(         \
+#define DS2I_INDEX_TYPES                                                     \
+    (ef)(pef_uniform)(pef_opt)(optpfor)(bic)(qmx)(simple9)(simple16)(        \
+        simple8b)(vbyte)(varintg8iu)(varintgb)(maskedvbyte)(streamvbyte)(    \
+        gamma)(delta)(delta_table)(opt_delta)(rice)(zeta)(single_rect_dint)( \
         single_packed_dint)(multi_packed_dint)(opt_vbyte)

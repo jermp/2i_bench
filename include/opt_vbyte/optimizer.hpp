@@ -6,8 +6,7 @@ namespace pvb {
 
 template <typename Encoder>
 struct optimizer {
-    typedef Encoder VBBlock;
-    typedef compact_ranked_bitvector RBBlock;
+    typedef compact_ranked_bitvector bitvector;
 
     static const int invalid_block_type = -1;
 
@@ -24,11 +23,11 @@ struct optimizer {
     template <typename Iterator>
     static std::vector<block<Iterator>> compute_partition(Iterator begin,
                                                           uint64_t n) {
-        assert(VBBlock::type == 0 and RBBlock::type == 1);
+        assert(Encoder::type == 0 and bitvector::type == 1);
 
         auto curr_begin = begin;   // begin of current block
-        auto curr_bv_end = begin;  // end of bin. vect. block
-        auto curr_vb_end = begin;  // end of VByte block
+        auto curr_bv_end = begin;  // end of bitvector block
+        auto curr_en_end = begin;  // end of Encoder block
         auto end = begin + n;      // end of list
         auto it = begin;           // current position
 
@@ -37,7 +36,7 @@ struct optimizer {
         int last_block_type = invalid_block_type;
 
         int64_t best_bv_gain = 0;
-        int64_t best_vb_gain = 0;
+        int64_t best_en_gain = 0;
         int64_t curr_gain = -1;
         int64_t F = int64_t(constants::fix_cost);
         int64_t T = F;
@@ -52,25 +51,25 @@ struct optimizer {
             T = 2 * F;
         };
 
-        auto encode_bin_vector = [&]() {
-            curr_block.type = RBBlock::type;
+        auto encode_bitvector = [&]() {
+            curr_block.type = bitvector::type;
             curr_begin = curr_bv_end;
             curr_block.begin = curr_begin;
             push_block();
             curr_gain -= best_bv_gain;
             best_bv_gain = 0;
-            best_vb_gain = curr_gain;
-            curr_vb_end = it + 1;
+            best_en_gain = curr_gain;
+            curr_en_end = it + 1;
             assert(curr_gain <= 0);
         };
 
-        auto encode_VByte = [&]() {
-            curr_block.type = VBBlock::type;
-            curr_begin = curr_vb_end;
+        auto encode_with_enc = [&]() {
+            curr_block.type = Encoder::type;
+            curr_begin = curr_en_end;
             curr_block.begin = curr_begin;
             push_block();
-            curr_gain -= best_vb_gain;
-            best_vb_gain = 0;
+            curr_gain -= best_en_gain;
+            best_en_gain = 0;
             best_bv_gain = curr_gain;
             curr_bv_end = it + 1;
             assert(curr_gain >= 0);
@@ -78,27 +77,27 @@ struct optimizer {
 
         auto close = [&]() {
             if (best_bv_gain > F and best_bv_gain - curr_gain > F) {
-                encode_bin_vector();
+                encode_bitvector();
             }
 
-            if (best_vb_gain < -F and best_vb_gain - curr_gain < -F) {
-                encode_VByte();
+            if (best_en_gain < -F and best_en_gain - curr_gain < -F) {
+                encode_with_enc();
             }
 
             if (curr_gain > 0) {
                 curr_bv_end = end;
-                encode_bin_vector();
+                encode_bitvector();
             } else {
-                curr_vb_end = end;
-                encode_VByte();
+                curr_en_end = end;
+                encode_with_enc();
             }
         };
 
         for (int64_t last_gain = 0; it != end;
              ++it, last = curr, last_gain = curr_gain) {
             curr = *it;
-            curr_gain += VBBlock::posting_cost(curr, last) -
-                         RBBlock::posting_cost(curr, last);
+            curr_gain += Encoder::posting_cost(curr, last) -
+                         bitvector::posting_cost(curr, last);
 
             if (curr_gain >= last_gain) {  // gain is not decreasing
 
@@ -107,21 +106,21 @@ struct optimizer {
                     curr_bv_end = it + 1;
                 }
 
-                assert(best_vb_gain <= curr_gain);
-                if (best_vb_gain - curr_gain < -2 * F and best_vb_gain < -T) {
-                    encode_VByte();
+                assert(best_en_gain <= curr_gain);
+                if (best_en_gain - curr_gain < -2 * F and best_en_gain < -T) {
+                    encode_with_enc();
                 }
 
             } else {  // gain is decreasing
 
-                if (curr_gain <= best_vb_gain) {
-                    best_vb_gain = curr_gain;
-                    curr_vb_end = it + 1;
+                if (curr_gain <= best_en_gain) {
+                    best_en_gain = curr_gain;
+                    curr_en_end = it + 1;
                 }
 
                 assert(best_bv_gain >= curr_gain);
                 if (best_bv_gain - curr_gain > 2 * F and best_bv_gain > T) {
-                    encode_bin_vector();
+                    encode_bitvector();
                 }
             }
         }

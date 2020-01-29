@@ -1,12 +1,11 @@
 #pragma once
 
 #include "configuration.hpp"
-#include "strict_sequence.hpp"
 #include "util.hpp"
 
 namespace pvb {
 
-template <typename BaseSequence = strict_sequence>
+template <typename BaseSequence>
 struct positive_sequence {
     typedef BaseSequence base_sequence_type;
     typedef typename base_sequence_type::enumerator base_sequence_enumerator;

@@ -7,42 +7,6 @@ namespace pvb {
 
 template <typename BlockCodec>
 struct block_sequence {
-    static inline uint64_t posting_cost(posting_type x, uint64_t base) {
-        return BlockCodec::posting_cost(x, base);
-    }
-
-    template <typename Iterator>
-    static DS2I_FLATTEN_FUNC uint64_t
-    bitsize(Iterator begin, ds2i::global_parameters const& params,
-            uint64_t universe, uint64_t n) {
-        succinct::bit_vector_builder bvb;
-        write(bvb, begin, universe, n, params);
-        return bvb.size();
-    }
-
-    template <typename Iterator>
-    static void write(succinct::bit_vector_builder& bvb, Iterator begin,
-                      uint64_t universe, uint64_t n,
-                      ds2i::global_parameters const& params) {
-        assert(bvb.size() % alignment == 0);
-        (void)params;
-
-        std::vector<posting_type> gaps;
-        posting_type last(-1);
-        auto it = begin;
-        for (size_t i = 0; i < n; ++i, ++it) {
-            auto doc = *it;
-            gaps.push_back(doc - last);
-            last = doc;
-        }
-
-        std::vector<uint8_t> out;
-        BlockCodec::encode(gaps.data(), universe, n, out);
-        for (uint8_t v : out) {
-            bvb.append_bits(v, 8);
-        }
-    }
-
     struct enumerator {
         enumerator() {}
 
@@ -50,14 +14,13 @@ struct block_sequence {
 
         enumerator(succinct::bit_vector const& bv, uint64_t offset,
                    uint64_t universe, uint64_t n,
-                   ds2i::global_parameters const& params)
+                   ds2i::global_parameters const&)
             : m_n(n)
             , m_universe(universe)
             , m_pos_in_block(0)
             , m_value(0)
             , m_cur_block(0)
             , m_blocks(succinct::util::ceil_div(n, BlockCodec::block_size)) {
-            (void)params;
             assert(offset % alignment == 0);
             m_ptr =
                 reinterpret_cast<uint8_t const*>(bv.data().data()) + offset / 8;

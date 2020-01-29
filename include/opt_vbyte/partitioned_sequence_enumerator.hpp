@@ -47,15 +47,15 @@ struct partitioned_sequence_enumerator {
         } else {
             m_endpoint_bits = ds2i::read_gamma(it);
             uint64_t cur_offset = it.position();
-            m_sizes = compact_elias_fano::enumerator(
+            m_sizes = ds2i::compact_elias_fano::enumerator(
                 bv, cur_offset, n, m_partitions - 1, *m_params);
-            cur_offset +=
-                compact_elias_fano::bitsize(*m_params, n, m_partitions - 1);
+            cur_offset += ds2i::compact_elias_fano::bitsize(*m_params, n,
+                                                            m_partitions - 1);
 
-            m_upper_bounds = compact_elias_fano::enumerator(
+            m_upper_bounds = ds2i::compact_elias_fano::enumerator(
                 bv, cur_offset, universe, m_partitions + 1, *m_params);
-            cur_offset += compact_elias_fano::bitsize(*m_params, universe,
-                                                      m_partitions + 1);
+            cur_offset += ds2i::compact_elias_fano::bitsize(*m_params, universe,
+                                                            m_partitions + 1);
 
             m_endpoints_offset = cur_offset;
             uint64_t endpoints_size = m_endpoint_bits * (m_partitions - 1);
@@ -236,8 +236,8 @@ struct partitioned_sequence_enumerator {
     uint64_t m_cur_upper_bound;
 
     succinct::bit_vector const* m_bv;
-    compact_elias_fano::enumerator m_sizes;
-    compact_elias_fano::enumerator m_upper_bounds;
+    ds2i::compact_elias_fano::enumerator m_sizes;
+    ds2i::compact_elias_fano::enumerator m_upper_bounds;
     base_sequence_enumerator m_partition_enum;
 };
 }  // namespace pvb

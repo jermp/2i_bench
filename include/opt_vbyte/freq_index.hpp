@@ -178,7 +178,8 @@ struct freq_index {
         typename DocsSequence::enumerator docs_enum(m_docs_sequences.bits(),
                                                     docs_it.position(),
                                                     num_docs(), n, m_params);
-        return pvb::decode_sequence(docs_enum, out);
+        return pvb::decode_sequence<typename DocsSequence::encoder_type>(
+            docs_enum, out);
     }
 
     void warmup(size_t /* i */) const {}

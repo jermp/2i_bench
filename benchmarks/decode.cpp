@@ -16,7 +16,7 @@
 
 #define INDEXES                                                              \
     (pef_uniform)(pef_opt)(bic)(maskedvbyte)(optpfor)(simple16)(qmx)(delta)( \
-        delta_table)(single_packed_dint)(opt_vbyte)
+        opt_delta)(delta_table)(rice)(single_packed_dint)(opt_vbyte)
 
 void perftest_slicing(char const* index_filename) {
     using namespace sliced;

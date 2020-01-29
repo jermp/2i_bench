@@ -31,23 +31,26 @@ void verify_collection(InputCollection const& input, const char* filename) {
                     logger()
                         << "docid in sequence " << s << " differs at position "
                         << i << "!" << std::endl;
-                    logger() << e.docid() << " != " << docid << std::endl;
+                    logger() << "got " << e.docid() << " but expected " << docid
+                             << std::endl;
                     logger()
                         << "sequence length: " << seq.docs.size() << std::endl;
 
                     exit(1);
                 }
 
-                if (freq != e.freq()) {
-                    logger()
-                        << "freq in sequence " << s << " differs at position "
-                        << i << "!" << std::endl;
-                    logger() << e.freq() << " != " << freq << std::endl;
-                    logger()
-                        << "sequence length: " << seq.docs.size() << std::endl;
+                // if (freq != e.freq()) {
+                //     logger()
+                //         << "freq in sequence " << s << " differs at position
+                //         "
+                //         << i << "!" << std::endl;
+                //     logger() << e.freq() << " != " << freq << std::endl;
+                //     logger()
+                //         << "sequence length: " << seq.docs.size() <<
+                //         std::endl;
 
-                    exit(1);
-                }
+                //     exit(1);
+                // }
             }
 
             s += 1;

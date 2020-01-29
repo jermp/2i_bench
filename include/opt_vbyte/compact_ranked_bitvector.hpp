@@ -48,7 +48,7 @@ struct compact_ranked_bitvector {
     static const int type = 1;
 
     // cost of adding the posting x to a
-    // bitvector of universe [universe]
+    // bitvector of universe [base]
     static inline uint64_t posting_cost(posting_type x, uint64_t base) {
         assert(x >= base);
         return x - base;

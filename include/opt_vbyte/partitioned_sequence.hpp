@@ -12,21 +12,20 @@
 
 namespace pvb {
 
-template <typename VByteBlockType>
-struct partitioned_vb_sequence {
-    typedef partitioned_sequence_enumerator<
-        indexed_sequence<block_sequence<VByteBlockType>>>
-        enumerator;
+template <typename Encoder>
+struct partitioned_sequence {
+    typedef Encoder encoder_type;
 
-    typedef VByteBlockType VBBlock;
-    typedef compact_ranked_bitvector RBBlock;
+    typedef partitioned_sequence_enumerator<
+        indexed_sequence<block_sequence<Encoder>>>
+        enumerator;
 
     template <typename Iterator>
     static void write(succinct::bit_vector_builder& bvb, Iterator begin,
                       uint64_t universe, uint64_t n,
                       ds2i::global_parameters const& params) {
         assert(n > 0);
-        auto partition = optimizer<VByteBlockType>::compute_partition(begin, n);
+        auto partition = optimizer<Encoder>::compute_partition(begin, n);
         size_t partitions = partition.size();
         assert(partitions > 0);
 
@@ -88,10 +87,11 @@ struct partitioned_vb_sequence {
             succinct::bit_vector_builder bv_sizes;
             succinct::bit_vector_builder bv_upper_bounds;
 
-            compact_elias_fano::write(bv_sizes, sizes.begin(), n,
-                                      partitions - 1, params);
-            compact_elias_fano::write(bv_upper_bounds, upper_bounds.begin(),
-                                      universe, partitions + 1, params);
+            ds2i::compact_elias_fano::write(bv_sizes, sizes.begin(), n,
+                                            partitions - 1, params);
+            ds2i::compact_elias_fano::write(bv_upper_bounds,
+                                            upper_bounds.begin(), universe,
+                                            partitions + 1, params);
             uint64_t endpoint_bits = ceil_log2(bv_sequences.size() + 1);
             ds2i::write_gamma(bvb, endpoint_bits);
 
@@ -108,7 +108,8 @@ struct partitioned_vb_sequence {
     }
 
 private:
-    static const uint64_t type_bits = indexed_sequence<>::type_bits;
+    static const uint64_t type_bits =
+        indexed_sequence<block_sequence<Encoder>>::type_bits;
 
     template <typename Iterator>
     static void write_block(succinct::bit_vector_builder& bvb, Iterator begin,
@@ -116,14 +117,15 @@ private:
                             uint64_t n, ds2i::global_parameters const& params) {
         assert(n > 0);
         switch (type) {
-            case VBBlock::type:
+            case Encoder::type:
                 bvb.append_bits(type, type_bits);
                 push_pad(bvb);
-                VBBlock::write(bvb, begin, base, universe, n, params);
+                Encoder::write(bvb, begin, base, universe, n, params);
                 break;
-            case RBBlock::type:
+            case compact_ranked_bitvector::type:
                 bvb.append_bits(type, type_bits);
-                RBBlock::write(bvb, begin, base, universe, n, params);
+                compact_ranked_bitvector::write(bvb, begin, base, universe, n,
+                                                params);
                 break;
             default:
                 assert(false);

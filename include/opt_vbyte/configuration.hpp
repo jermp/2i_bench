@@ -13,6 +13,7 @@
 #include <boost/thread/experimental/parallel/v2/task_region.hpp>
 
 namespace pvb {
+
 typedef boost::executors::basic_thread_pool executor_type;
 typedef boost::experimental::parallel::v2::task_region_handle_gen<executor_type>
     task_region_handle;
