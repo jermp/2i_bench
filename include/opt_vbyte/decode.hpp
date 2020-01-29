@@ -72,4 +72,5 @@ uint32_t decode_sequence(Iterator& it, uint32_t* out) {
     }
     return uint32_t(out - in);
 }
+
 }  // namespace pvb

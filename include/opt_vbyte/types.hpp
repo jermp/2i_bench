@@ -13,14 +13,11 @@
 
 namespace pvb {
 
-typedef freq_index<partitioned_sequence<maskedvbyte_block>,
-                   // positive_sequence<partitioned_sequence<maskedvbyte_block>>
-                   ds2i::positive_sequence<>>
-    opt_vb;
+#define OPT_INDEX(CODEC)                            \
+    freq_index<partitioned_sequence<CODEC##_block>, \
+               positive_sequence<partitioned_sequence<CODEC##_block>>>
 
-typedef freq_index<partitioned_sequence<delta_block>,
-                   // positive_sequence<partitioned_sequence<delta_block>>
-                   ds2i::positive_sequence<>>
-    opt_delta;
+typedef OPT_INDEX(maskedvbyte) opt_vb;
+typedef OPT_INDEX(delta) opt_delta;
 
 }  // namespace pvb
