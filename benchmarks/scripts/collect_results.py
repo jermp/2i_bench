@@ -13,8 +13,10 @@ codecs = [
 # "simple16",
 # "qmx",
 # "optpfor",
-"single_packed_dint",
-"opt_vbyte"
+# "single_packed_dint",
+# "opt_vbyte"
+# "opt_delta"
+"rice"
 ]
 
 for c in codecs:

@@ -59,9 +59,18 @@ void write_rice(succinct::bit_vector_builder& bvb, uint64_t n, const uint64_t k,
     assert(k > 0 and k < 32);
     assert(divisor == uint64_t(1) << k);
     uint64_t q = n / divisor;
-    write_delta(bvb, q);  // write quotient in delta
+    write_gamma(bvb, q);
     uint64_t r = n - q * divisor;
     bvb.append_bits(r, k);
+}
+
+uint64_t read_rice(bits_enumerator& it, const uint64_t k,
+                   const uint64_t divisor) {
+    assert(k > 0 and k < 32);
+    assert(divisor == uint64_t(1) << k);
+    uint64_t q = read_gamma(it);
+    uint64_t r = it.take(k);
+    return r + q * divisor;
 }
 
 uint64_t read_delta(succinct::bit_vector::enumerator& it) {
@@ -72,15 +81,6 @@ uint64_t read_delta(succinct::bit_vector::enumerator& it) {
 uint64_t read_delta(bits_enumerator& it) {
     uint64_t l = read_gamma(it);
     return (it.take(l) | (uint64_t(1) << l)) - 1;
-}
-
-uint64_t read_rice(bits_enumerator& it, const uint64_t k,
-                   const uint64_t divisor) {
-    assert(k > 0 and k < 32);
-    assert(divisor == uint64_t(1) << k);
-    uint64_t q = read_delta(it);
-    uint64_t r = it.take(k);
-    return r + q * divisor;
 }
 
 uint32_t reverse(uint32_t x, uint32_t len) {

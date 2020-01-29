@@ -626,25 +626,46 @@ struct delta_table_block {
 struct rice_block {
     static const uint64_t block_size = constants::block_size;
     static const uint64_t overflow = 0;
-    static const uint64_t k = 1;
-    static const uint64_t divisor = uint64_t(1) << k;
 
     static void encode(uint32_t const* in, uint32_t /* sum_of_values */,
                        size_t n, std::vector<uint8_t>& out) {
         assert(n <= block_size);
-        succinct::bit_vector_builder bvb;
-        for (size_t i = 0; i != n; ++i, ++in) {
-            write_rice(bvb, *in, k, divisor);
+
+        std::vector<succinct::bit_vector_builder> bvbs(4);
+
+        for (uint64_t i = 0; i != 4; ++i) {
+            bvbs[i].append_bits(i, 2);  // write selectors
         }
-        auto const& bits = bvb.move_bits();
+
+        for (size_t i = 0; i != n; ++i, ++in) {
+            write_rice(bvbs[0], *in, 1, 2);
+            write_rice(bvbs[1], *in, 2, 4);
+            write_rice(bvbs[2], *in, 3, 8);
+            write_rice(bvbs[3], *in, 4, 16);
+        }
+
+        uint64_t min_index = 0;
+        uint64_t min_size = -1;
+        for (uint64_t i = 0; i != 4; ++i) {
+            if (bvbs[i].size() < min_size) {
+                min_size = bvbs[i].size();
+                min_index = i;
+            }
+        }
+
+        assert(min_index < 4);
+        auto const& bits = bvbs[min_index].move_bits();
         uint8_t const* bufptr = (uint8_t const*)bits.data();
-        uint64_t num_bytes = succinct::util::ceil_div(bvb.size(), 8);
+        uint64_t num_bytes = succinct::util::ceil_div(min_size, 8);
         out.insert(out.end(), bufptr, bufptr + num_bytes);
     }
 
     static uint8_t const* decode(uint8_t const* in, uint32_t* out,
                                  uint32_t /* sum_of_values */, size_t n) {
         bits_enumerator it(reinterpret_cast<uint64_t const*>(in));
+        uint64_t selector = it.take(2);
+        uint64_t k = selector + 1;
+        uint64_t divisor = uint64_t(1) << k;
         for (size_t i = 0; i != n; ++i, ++out) {
             *out = read_rice(it, k, divisor);
         }
