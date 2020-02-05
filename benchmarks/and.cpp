@@ -16,7 +16,7 @@
 #include "../external/s_indexes/include/next_geq_enumerator.hpp"
 
 // first run is for warming up
-static const int runs = 10 + 1;
+static const int runs = 5 + 1;
 using namespace ds2i;
 
 // version with next_geq
@@ -71,7 +71,6 @@ void perftest_slicing(const char* index_filename, uint32_t num_queries) {
     uint64_t num_docs = index.universe();
     std::vector<uint32_t> out(num_docs);
     size_t total = 0;
-    std::cout << "Executing " << num_queries << " and queries" << std::endl;
 
     std::vector<sliced::next_geq_enumerator> enums;
 
