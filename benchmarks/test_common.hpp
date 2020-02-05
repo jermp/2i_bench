@@ -3,19 +3,21 @@
 typedef uint32_t term_id_type;
 typedef std::vector<term_id_type> term_id_vec;
 
-bool read_query(term_id_vec& ret, std::istream& is = std::cin) {
+#include "../include/ds2i/queries.hpp"
+
+namespace ds2i {
+
+bool read_query_and_remove_duplicates(term_id_vec& ret,
+                                      std::istream& is = std::cin) {
     ret.clear();
     std::string line;
-    if (!std::getline(is, line)) {
-        return false;
-    }
-
+    if (!std::getline(is, line)) return false;
     std::istringstream iline(line);
     term_id_type term_id;
     while (iline >> term_id) {
         ret.push_back(term_id);
     }
-
+    remove_duplicate_terms(ret);
     return true;
 }
 
@@ -31,3 +33,5 @@ bool read_query(term_id_vec& ret, std::istream& is = std::cin) {
     std::cout << "Mean per run: " << avg << " [musec]\n";               \
     std::cout << "Mean per query: " << avg / num_queries << " [musec]"; \
     std::cout << std::endl;
+
+}  // namespace ds2i
