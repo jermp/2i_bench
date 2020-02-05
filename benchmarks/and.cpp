@@ -13,18 +13,47 @@
 #include "../external/s_indexes/include/util.hpp"
 #include "../external/s_indexes/include/s_index.hpp"
 #include "../external/s_indexes/include/intersection.hpp"
+#include "../external/s_indexes/include/next_geq_enumerator.hpp"
 
 // first run is for warming up
 static const int runs = 10 + 1;
 
-void perftest_slicing(const char* index_filename, uint32_t num_queries) {
-    using namespace sliced;
+// version with next_geq
+size_t pairwise_intersection(uint64_t num_docs,
+                             std::vector<sliced::next_geq_enumerator>& enums,
+                             uint32_t* out) {
+    uint64_t size = 0;
+    uint64_t candidate = enums[0].next_geq(0);
+    size_t i = 1;
+    while (candidate < num_docs) {
+        for (; i < 2; ++i) {
+            uint64_t val = enums[i].next_geq(candidate);
+            if (val != candidate) {
+                candidate = val;
+                i = 0;
+                break;
+            }
+        }
 
-    std::vector<query> queries;
+        if (i == 2) {
+            out[size] = candidate;
+            ++size;
+            candidate = enums[0].next_geq(candidate + 1);
+            i = 1;
+        }
+    }
+
+    return size;
+}
+
+void perftest_slicing(const char* index_filename, uint32_t num_queries) {
+    // using namespace sliced;
+
+    std::vector<sliced::query> queries;
     queries.reserve(num_queries);
 
     for (uint32_t i = 0; i != num_queries; ++i) {
-        query q;
+        sliced::query q;
         int x = scanf("%d", &q.i);
         int y = scanf("%d", &q.j);
         if (x == EOF or y == EOF) {
@@ -33,19 +62,33 @@ void perftest_slicing(const char* index_filename, uint32_t num_queries) {
         queries.push_back(q);
     }
 
-    s_index index;
+    sliced::s_index index;
     index.mmap(index_filename);
 
-    std::vector<uint32_t> out(index.universe());
+    uint64_t num_docs = index.universe();
+    std::vector<uint32_t> out(num_docs);
     size_t total = 0;
     std::cout << "Executing " << num_queries << " pair-wise and queries"
               << std::endl;
 
+    std::vector<sliced::next_geq_enumerator> enums(2);
     essentials::timer_type t;
     for (int run = 0; run != runs; ++run) {
         t.start();
         for (auto const& q : queries) {
-            total += pairwise_intersection(index[q.i], index[q.j], out.data());
+            auto const& l = index[q.i];
+            auto const& r = index[q.j];
+            // total += sliced::pairwise_intersection(l, r, out.data());
+
+            if (l.size() <= r.size()) {
+                enums[0] = sliced::next_geq_enumerator(l);
+                enums[1] = sliced::next_geq_enumerator(r);
+                total += pairwise_intersection(num_docs, enums, out.data());
+            } else {
+                enums[0] = sliced::next_geq_enumerator(r);
+                enums[1] = sliced::next_geq_enumerator(l);
+                total += pairwise_intersection(num_docs, enums, out.data());
+            }
         }
         t.stop();
     }
