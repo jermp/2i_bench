@@ -2,21 +2,21 @@ import sys, os
 
 input_filename = sys.argv[1]
 output_filename = sys.argv[2]
-# query_logs_path = sys.argv[3]
+querylog = sys.argv[3]
 
 codecs = [
-# "pef_opt",
-# "bic",
-# "maskedvbyte",
-# "slicing",
-# "delta",
-# "simple16",
-# "qmx",
-# "optpfor",
-# "single_packed_dint",
-# "opt_vbyte"
-# "opt_delta"
-"rice"
+"maskedvbyte",
+"opt_vbyte",
+"bic",
+"delta",
+"opt_delta",
+"rice",
+"pef_opt",
+"single_packed_dint",
+"optpfor",
+"simple16",
+"qmx",
+"slicing"
 ]
 
 for c in codecs:
@@ -26,17 +26,9 @@ for c in codecs:
 
     os.system("./build_index " + c + " " + input_filename + " --out " + index_filename + " >> " + results)
 
-    # for i in xrange(0,3):
-    #     os.system("./next_geq " + " " + c + " " + index_filename + " " + input_filename + ".docs 2>> " + results)
+    for i in xrange(0,5):
+        os.system("./and " + " " + c + " " + index_filename + " 1000 < " + querylog + " >> " + results)
 
-    # for i in xrange(0,5):
-    #     os.system("./and " + " " + c + " " + index_filename + " 1000 < " + query_logs_path + "/" + output_filename + ".queries.mapped4096.2terms.shuffled >> " + results)
-    # for i in xrange(0,5):
-    #     os.system("./or " + " " + c + " " + index_filename + " 1000 < " + query_logs_path + "/" + output_filename + ".queries.mapped4096.2terms.shuffled >> " + results)
-    # for i in xrange(0,3):
-    #     os.system("./access " + " " + c + " " + index_filename + " 1000 < " + query_logs_path + "/" + output_filename + ".access.queries.1k >> " + results)
-    # for i in xrange(0,3):
-    #     os.system("./next_geq " + " " + c + " " + index_filename + " 1000 < " + query_logs_path + "/" + output_filename + ".next_geq.queries.1k >> " + results)
     for i in xrange(0,5):
         os.system("./decode " + c + " " + index_filename + " >> " + results)
 

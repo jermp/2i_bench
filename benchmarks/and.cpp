@@ -105,20 +105,14 @@ void perftest_slicing(const char* index_filename, uint32_t num_queries) {
         // }
 
         // 2. only pairwise
-        // for (auto const& q : queries) {
-        //     auto const& l = index[q.i];
-        //     auto const& r = index[q.j];
-        //     // total += sliced::pairwise_intersection(l, r, out.data());
-
-        //     if (l.size() <= r.size()) {
-        //         enums[0] = sliced::next_geq_enumerator(l);
-        //         enums[1] = sliced::next_geq_enumerator(r);
-        //         total += boolean_and_query(num_docs, enums, out);
-        //     } else {
-        //         enums[0] = sliced::next_geq_enumerator(r);
-        //         enums[1] = sliced::next_geq_enumerator(l);
-        //         total += boolean_and_query(num_docs, enums, out);
-        //     }
+        // for (uint32_t i = 0; i != num_queries; ++i) {
+        //     auto const& query = queries[i];
+        //     // total += sliced::pairwise_intersection(index[query[0]],
+        //     // index[query[1]], out.data());
+        //     enums.clear();
+        //     enums.emplace_back(query[0]);
+        //     enums.emplace_back(query[1]);
+        //     total += boolean_and_query(num_docs, enums, out);
         // }
 
         // 3. mixed strategy with special cases for 2 and 3 terms
@@ -132,6 +126,10 @@ void perftest_slicing(const char* index_filename, uint32_t num_queries) {
                 seqs[0] = index[query[0]];
                 seqs[1] = index[query[1]];
                 seqs[2] = index[query[2]];
+                std::sort(seqs.begin(), seqs.end(),
+                          [](auto const& l, auto const& r) {
+                              return l.size() < r.size();
+                          });
                 size = three_terms_and_query(seqs[0], seqs[1], seqs[2], out);
             } else {
                 enums.clear();

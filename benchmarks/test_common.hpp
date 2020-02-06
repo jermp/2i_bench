@@ -26,12 +26,13 @@ bool read_query_and_remove_duplicates(term_id_vec& ret,
     boost::iostreams::mapped_file_source m(index_filename); \
     succinct::mapper::map(index, m);
 
-#define PRINT_TIME                                                      \
-    std::cout << total << std::endl;                                    \
-    t.discard_first();                                                  \
-    double avg = t.average();                                           \
-    std::cout << "Mean per run: " << avg << " [musec]\n";               \
-    std::cout << "Mean per query: " << avg / num_queries << " [musec]"; \
+#define PRINT_TIME                                                  \
+    std::cout << total << std::endl;                                \
+    t.discard_first();                                              \
+    double avg = t.average();                                       \
+    std::cout << "Mean per run: " << avg / 1000 << " [millisec]\n"; \
+    std::cout << "Mean per query: " << (avg / num_queries) / 1000   \
+              << " [millisec]";                                     \
     std::cout << std::endl;
 
 }  // namespace ds2i
