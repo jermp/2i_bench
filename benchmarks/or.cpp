@@ -18,27 +18,28 @@
 using namespace ds2i;
 
 // version with next
-uint64_t boolean_or_query(uint64_t num_docs,
-                          std::vector<sliced::enumerator>& enums,
-                          std::vector<uint32_t>& out) {
-    uint64_t cur_doc = std::min_element(enums.begin(), enums.end(),
-                                        [](auto const& l, auto const& r) {
-                                            return l.value() < r.value();
-                                        })
-                           ->value();
-    uint64_t size = 0;
+size_t boolean_or_query(uint32_t num_docs, size_t query_size,
+                        std::vector<sliced::enumerator>& enums,
+                        std::vector<uint32_t>& out) {
+    uint32_t cur_doc =
+        std::min_element(
+            enums.begin(), enums.begin() + query_size,
+            [](auto const& l, auto const& r) { return l.value() < r.value(); })
+            ->value();
+
+    size_t size = 0;
     while (cur_doc < num_docs) {
         out[size++] = cur_doc;
-        uint64_t next_doc = num_docs;
-        for (size_t i = 0; i != enums.size(); ++i) {
-            uint32_t val = enums[i].value();
-            if (val == cur_doc) {
-                val = enums[i].next() ? enums[i].value() : num_docs;
+        uint32_t next_doc = num_docs;
+        for (size_t i = 0; i != query_size; ++i) {
+            if (enums[i].value() == cur_doc) enums[i].next();
+            if (enums[i].value() < next_doc) {
+                next_doc = enums[i].value();
             }
-            if (val < next_doc) next_doc = val;
         }
         cur_doc = next_doc;
     }
+
     return size;
 }
 
@@ -52,7 +53,7 @@ void perftest_slicing(const char* index_filename, uint32_t num_queries) {
     }
 
     num_queries = queries.size();
-    std::cout << "Executing " << num_queries << " or queries" << std::endl;
+    std::cout << "Executing " << num_queries << " OR queries" << std::endl;
 
     sliced::s_index index;
     index.mmap(index_filename);
@@ -68,12 +69,14 @@ void perftest_slicing(const char* index_filename, uint32_t num_queries) {
         t.start();
 
         // 1. always next
-        for (auto const& query : queries) {
-            for (uint64_t i = 0; i != query.size(); ++i) {
-                enums[i].init(index[query[i]]);
-            }
-            total += boolean_or_query(num_docs, enums, out);
-        }
+        // for (auto const& query : queries) {
+        //     for (uint64_t i = 0; i != query.size(); ++i) {
+        //         enums[i].init(index[query[i]], num_docs);
+        //     }
+        //     uint64_t size =
+        //         boolean_or_query(num_docs, query.size(), enums, out);
+        //     total += size;
+        // }
 
         // 2. only pairwise
         // for (uint32_t i = 0; i != num_queries; ++i) {
@@ -87,20 +90,19 @@ void perftest_slicing(const char* index_filename, uint32_t num_queries) {
         // }
 
         // 3. mixed strategy with special cases for 2 terms
-        // for (auto const& query : queries) {
-        //     uint64_t size = 0;
-        //     if (query.size() == 2) {
-        //         size = sliced::pairwise_union(index[query[0]],
-        //         index[query[1]],
-        //                                       out.data());
-        //     } else {
-        //         for (uint64_t i = 0; i != query.size(); ++i) {
-        //             enums[i].init(index[query[i]]);
-        //         }
-        //         size = boolean_or_query(num_docs, enums, out);
-        //     }
-        //     total += size;
-        // }
+        for (auto const& query : queries) {
+            uint64_t size = 0;
+            if (query.size() == 2) {
+                size = sliced::pairwise_union(index[query[0]], index[query[1]],
+                                              out.data());
+            } else {
+                for (uint64_t i = 0; i != query.size(); ++i) {
+                    enums[i].init(index[query[i]], num_docs);
+                }
+                size = boolean_or_query(num_docs, query.size(), enums, out);
+            }
+            total += size;
+        }
 
         t.stop();
     }
@@ -108,17 +110,17 @@ void perftest_slicing(const char* index_filename, uint32_t num_queries) {
 }
 
 template <typename Enum>
-uint64_t boolean_or_query(uint64_t num_docs, std::vector<Enum>& enums,
-                          std::vector<uint32_t>& out) {
-    uint64_t cur_doc = std::min_element(enums.begin(), enums.end(),
+size_t boolean_or_query(uint32_t num_docs, std::vector<Enum>& enums,
+                        std::vector<uint32_t>& out) {
+    uint32_t cur_doc = std::min_element(enums.begin(), enums.end(),
                                         [](auto const& l, auto const& r) {
                                             return l.docid() < r.docid();
                                         })
                            ->docid();
-    uint64_t size = 0;
+    size_t size = 0;
     while (cur_doc < num_docs) {
         out[size++] = cur_doc;
-        uint64_t next_doc = num_docs;
+        uint32_t next_doc = num_docs;
         for (size_t i = 0; i != enums.size(); ++i) {
             if (enums[i].docid() == cur_doc) enums[i].next();
             if (enums[i].docid() < next_doc) {
@@ -145,7 +147,7 @@ void perftest(const char* index_filename, uint32_t num_queries) {
     }
 
     num_queries = queries.size();
-    std::cout << "Executing " << num_queries << " and queries" << std::endl;
+    std::cout << "Executing " << num_queries << " OR queries" << std::endl;
 
     uint64_t num_docs = index.num_docs();
     std::vector<uint32_t> out(num_docs);
@@ -164,6 +166,9 @@ void perftest(const char* index_filename, uint32_t num_queries) {
             }
             uint64_t size = boolean_or_query(num_docs, qq, out);
             total += size;
+            // for (uint64_t i = 0; i != size; ++i) {
+            //     std::cout << out[i] << "\n";
+            // }
         }
         t.stop();
     }

@@ -74,7 +74,7 @@ void perftest_slicing(const char* index_filename, uint32_t num_queries) {
     }
 
     num_queries = queries.size();
-    std::cout << "Executing " << num_queries << " and queries" << std::endl;
+    std::cout << "Executing " << num_queries << " AND queries" << std::endl;
 
     sliced::s_index index;
     index.mmap(index_filename);
@@ -189,7 +189,7 @@ void perftest(const char* index_filename, uint32_t num_queries) {
     }
 
     num_queries = queries.size();
-    std::cout << "Executing " << num_queries << " and queries" << std::endl;
+    std::cout << "Executing " << num_queries << " AND queries" << std::endl;
 
     uint64_t num_docs = index.num_docs();
     std::vector<uint32_t> out(num_docs);
