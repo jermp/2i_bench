@@ -7,6 +7,11 @@ typedef std::vector<term_id_type> term_id_vec;
 
 namespace ds2i {
 
+namespace testing {
+// first run is for warming up
+static const int runs = 5 + 1;
+}  // namespace testing
+
 bool read_query_and_remove_duplicates(term_id_vec& ret,
                                       std::istream& is = std::cin) {
     ret.clear();
@@ -14,9 +19,7 @@ bool read_query_and_remove_duplicates(term_id_vec& ret,
     if (!std::getline(is, line)) return false;
     std::istringstream iline(line);
     term_id_type term_id;
-    while (iline >> term_id) {
-        ret.push_back(term_id);
-    }
+    while (iline >> term_id) ret.push_back(term_id);
     remove_duplicate_terms(ret);
     return true;
 }

@@ -16,8 +16,6 @@
 #include "../external/s_indexes/include/next_geq_enumerator.hpp"
 #include "../external/s_indexes/include/contains.hpp"
 
-// first run is for warming up
-static const int runs = 5 + 1;
 using namespace ds2i;
 
 size_t three_terms_and_query(sliced::s_sequence const& s1,
@@ -67,8 +65,6 @@ size_t boolean_and_query(uint64_t num_docs,
 }
 
 void perftest_slicing(const char* index_filename, uint32_t num_queries) {
-    // using namespace sliced;
-
     std::vector<term_id_vec> queries;
     queries.reserve(num_queries);
     term_id_vec q;
@@ -91,7 +87,7 @@ void perftest_slicing(const char* index_filename, uint32_t num_queries) {
     std::vector<sliced::s_sequence> seqs(3);
 
     essentials::timer_type t;
-    for (int run = 0; run != runs; ++run) {
+    for (int run = 0; run != testing::runs; ++run) {
         t.start();
 
         // 1. always next_geq
@@ -203,7 +199,7 @@ void perftest(const char* index_filename, uint32_t num_queries) {
     std::vector<enum_type> qq;
 
     essentials::timer_type t;
-    for (int run = 0; run != runs; ++run) {
+    for (int run = 0; run != testing::runs; ++run) {
         t.start();
         for (uint32_t i = 0; i != num_queries; ++i) {
             qq.clear();

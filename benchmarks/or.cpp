@@ -13,86 +13,120 @@
 #include "../external/s_indexes/include/util.hpp"
 #include "../external/s_indexes/include/s_index.hpp"
 #include "../external/s_indexes/include/union.hpp"
+#include "../external/s_indexes/include/enumerator.hpp"
 
-// first run is for warming up
-static const int runs = 10 + 1;
+using namespace ds2i;
+
+// version with next
+uint64_t boolean_or_query(uint64_t num_docs,
+                          std::vector<sliced::enumerator>& enums,
+                          std::vector<uint32_t>& out) {
+    uint64_t cur_doc = std::min_element(enums.begin(), enums.end(),
+                                        [](auto const& l, auto const& r) {
+                                            return l.value() < r.value();
+                                        })
+                           ->value();
+    uint64_t size = 0;
+    while (cur_doc < num_docs) {
+        out[size++] = cur_doc;
+        uint64_t next_doc = num_docs;
+        for (size_t i = 0; i != enums.size(); ++i) {
+            uint32_t val = enums[i].value();
+            if (val == cur_doc) {
+                val = enums[i].next() ? enums[i].value() : num_docs;
+            }
+            if (val < next_doc) next_doc = val;
+        }
+        cur_doc = next_doc;
+    }
+    return size;
+}
 
 void perftest_slicing(const char* index_filename, uint32_t num_queries) {
-    using namespace sliced;
-
-    std::vector<query> queries;
+    std::vector<term_id_vec> queries;
     queries.reserve(num_queries);
-
-    for (uint32_t i = 0; i != num_queries; ++i) {
-        query q;
-        int x = scanf("%d", &q.i);
-        int y = scanf("%d", &q.j);
-        if (x == EOF or y == EOF) {
-            break;
-        }
+    term_id_vec q;
+    while (read_query_and_remove_duplicates(q) and
+           queries.size() < num_queries) {
         queries.push_back(q);
     }
 
-    s_index index;
+    num_queries = queries.size();
+    std::cout << "Executing " << num_queries << " or queries" << std::endl;
+
+    sliced::s_index index;
     index.mmap(index_filename);
 
-    std::vector<uint32_t> out(index.universe());
+    uint64_t num_docs = index.universe();
+    std::vector<uint32_t> out(num_docs);
     size_t total = 0;
-    std::cout << "Executing " << num_queries << " pair-wise or queries"
-              << std::endl;
+
+    std::vector<sliced::enumerator> enums(20);
 
     essentials::timer_type t;
-    for (int run = 0; run != runs; ++run) {
+    for (int run = 0; run != testing::runs; ++run) {
         t.start();
-        for (auto const& q : queries) {
-            total += pairwise_union(index[q.i], index[q.j], out.data());
+
+        // 1. always next
+        for (auto const& query : queries) {
+            for (uint64_t i = 0; i != query.size(); ++i) {
+                enums[i].init(index[query[i]]);
+            }
+            total += boolean_or_query(num_docs, enums, out);
         }
+
+        // 2. only pairwise
+        // for (uint32_t i = 0; i != num_queries; ++i) {
+        //     auto const& query = queries[i];
+        //     // total += sliced::pairwise_union(index[query[0]],
+        //     // index[query[1]], out.data());
+        //     enums.clear();
+        //     enums.emplace_back(query[0]);
+        //     enums.emplace_back(query[1]);
+        //     total += boolean_or_query(num_docs, enums, out);
+        // }
+
+        // 3. mixed strategy with special cases for 2 terms
+        // for (auto const& query : queries) {
+        //     uint64_t size = 0;
+        //     if (query.size() == 2) {
+        //         size = sliced::pairwise_union(index[query[0]],
+        //         index[query[1]],
+        //                                       out.data());
+        //     } else {
+        //         for (uint64_t i = 0; i != query.size(); ++i) {
+        //             enums[i].init(index[query[i]]);
+        //         }
+        //         size = boolean_or_query(num_docs, enums, out);
+        //     }
+        //     total += size;
+        // }
+
         t.stop();
     }
     PRINT_TIME
 }
 
 template <typename Enum>
-static uint64_t pair_wise_or(std::vector<Enum>& enums,
-                             std::vector<uint32_t>& out) {
+uint64_t boolean_or_query(uint64_t num_docs, std::vector<Enum>& enums,
+                          std::vector<uint32_t>& out) {
+    uint64_t cur_doc = std::min_element(enums.begin(), enums.end(),
+                                        [](auto const& l, auto const& r) {
+                                            return l.docid() < r.docid();
+                                        })
+                           ->docid();
     uint64_t size = 0;
-
-    while (true) {
-        uint32_t doc1 = enums[0].docid();
-        uint32_t doc2 = enums[1].docid();
-        if (doc1 < doc2) {
-            out[size++] = doc1;
-            enums[0].next();
-            if (enums[0].position() == enums[0].size()) {
-                break;
-            }
-        } else if (doc2 < doc1) {
-            out[size++] = doc2;
-            enums[1].next();
-            if (enums[1].position() == enums[1].size()) {
-                break;
-            }
-        } else {
-            out[size++] = doc1;
-            enums[0].next();
-            enums[1].next();
-            if (enums[0].position() == enums[0].size() or
-                enums[1].position() == enums[1].size()) {
-                break;
+    while (cur_doc < num_docs) {
+        out[size++] = cur_doc;
+        uint64_t next_doc = num_docs;
+        for (size_t i = 0; i != enums.size(); ++i) {
+            if (enums[i].docid() == cur_doc) enums[i].next();
+            if (enums[i].docid() < next_doc) {
+                next_doc = enums[i].docid();
             }
         }
+        cur_doc = next_doc;
     }
-
-    while (enums[0].position() != enums[0].size()) {
-        out[size++] = enums[0].docid();
-        enums[0].next();
-    }
-
-    while (enums[1].position() != enums[1].size()) {
-        out[size++] = enums[1].docid();
-        enums[1].next();
-    }
-
     return size;
 }
 
@@ -103,15 +137,15 @@ void perftest(const char* index_filename, uint32_t num_queries) {
     LOAD_INDEX
 
     std::vector<term_id_vec> queries;
+    queries.reserve(num_queries);
     term_id_vec q;
-    while (read_query(q) and queries.size() < num_queries) {
-        assert(q.size() == 2);
+    while (read_query_and_remove_duplicates(q) and
+           queries.size() < num_queries) {
         queries.push_back(q);
     }
 
     num_queries = queries.size();
-    std::cout << "Executing " << num_queries << " pair-wise or queries"
-              << std::endl;
+    std::cout << "Executing " << num_queries << " and queries" << std::endl;
 
     uint64_t num_docs = index.num_docs();
     std::vector<uint32_t> out(num_docs);
@@ -119,17 +153,16 @@ void perftest(const char* index_filename, uint32_t num_queries) {
 
     typedef typename Index::document_enumerator enum_type;
     std::vector<enum_type> qq;
-    qq.reserve(2);
 
     essentials::timer_type t;
-    for (int run = 0; run != runs; ++run) {
+    for (int run = 0; run != testing::runs; ++run) {
         t.start();
         for (uint32_t i = 0; i != num_queries; ++i) {
             qq.clear();
             for (auto term : queries[i]) {
                 qq.push_back(index[term]);
             }
-            uint64_t size = pair_wise_or(qq, out);
+            uint64_t size = boolean_or_query(num_docs, qq, out);
             total += size;
         }
         t.stop();
