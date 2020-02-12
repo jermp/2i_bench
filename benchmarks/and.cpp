@@ -13,6 +13,7 @@
 #include "../external/s_indexes/include/util.hpp"
 #include "../external/s_indexes/include/s_index.hpp"
 #include "../external/s_indexes/include/intersection.hpp"
+#include "../external/s_indexes/include/intersection_many.hpp"
 #include "../external/s_indexes/include/next_geq_enumerator.hpp"
 #include "../external/s_indexes/include/contains.hpp"
 
@@ -83,8 +84,10 @@ void perftest_slicing(const char* index_filename, uint32_t num_queries) {
     std::vector<uint32_t> out(num_docs);
     size_t total = 0;
 
-    std::vector<sliced::next_geq_enumerator> enums;
-    std::vector<sliced::s_sequence> seqs(3);
+    // std::vector<sliced::next_geq_enumerator> enums;
+    // std::vector<sliced::s_sequence> seqs(3);
+
+    std::vector<sliced::s_sequence> sequences;
 
     essentials::timer_type t;
     for (int run = 0; run != testing::runs; ++run) {
@@ -112,28 +115,38 @@ void perftest_slicing(const char* index_filename, uint32_t num_queries) {
         // }
 
         // 3. mixed strategy with special cases for 2 and 3 terms
+        // for (uint32_t i = 0; i != num_queries; ++i) {
+        //     uint64_t size = 0;
+        //     auto const& query = queries[i];
+        //     if (query.size() == 2) {
+        //         size = sliced::pairwise_intersection(
+        //             index[query[0]], index[query[1]], out.data());
+        //     } else if (query.size() == 3) {
+        //         seqs[0] = index[query[0]];
+        //         seqs[1] = index[query[1]];
+        //         seqs[2] = index[query[2]];
+        //         std::sort(seqs.begin(), seqs.end(),
+        //                   [](auto const& l, auto const& r) {
+        //                       return l.size() < r.size();
+        //                   });
+        //         size = three_terms_and_query(seqs[0], seqs[1], seqs[2], out);
+        //     } else {
+        //         enums.clear();
+        //         for (auto term : query) {
+        //             enums.push_back(index[term]);
+        //         }
+        //         size = boolean_and_query(num_docs, enums, out);
+        //     }
+        //     total += size;
+        // }
+
+        // 4. intersection with many
         for (uint32_t i = 0; i != num_queries; ++i) {
-            uint64_t size = 0;
-            auto const& query = queries[i];
-            if (query.size() == 2) {
-                size = sliced::pairwise_intersection(
-                    index[query[0]], index[query[1]], out.data());
-            } else if (query.size() == 3) {
-                seqs[0] = index[query[0]];
-                seqs[1] = index[query[1]];
-                seqs[2] = index[query[2]];
-                std::sort(seqs.begin(), seqs.end(),
-                          [](auto const& l, auto const& r) {
-                              return l.size() < r.size();
-                          });
-                size = three_terms_and_query(seqs[0], seqs[1], seqs[2], out);
-            } else {
-                enums.clear();
-                for (auto term : query) {
-                    enums.push_back(index[term]);
-                }
-                size = boolean_and_query(num_docs, enums, out);
+            sequences.clear();
+            for (auto term : queries[i]) {
+                sequences.push_back(index[term]);
             }
+            uint64_t size = sliced::intersection(sequences, out.data());
             total += size;
         }
 
