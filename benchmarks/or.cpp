@@ -13,35 +13,10 @@
 #include "../external/s_indexes/include/util.hpp"
 #include "../external/s_indexes/include/s_index.hpp"
 #include "../external/s_indexes/include/union.hpp"
+#include "../external/s_indexes/include/union_many.hpp"
 #include "../external/s_indexes/include/enumerator.hpp"
 
 using namespace ds2i;
-
-// version with next
-size_t boolean_or_query(uint32_t num_docs, size_t query_size,
-                        std::vector<sliced::enumerator>& enums,
-                        std::vector<uint32_t>& out) {
-    uint32_t cur_doc =
-        std::min_element(
-            enums.begin(), enums.begin() + query_size,
-            [](auto const& l, auto const& r) { return l.value() < r.value(); })
-            ->value();
-
-    size_t size = 0;
-    while (cur_doc < num_docs) {
-        out[size++] = cur_doc;
-        uint32_t next_doc = num_docs;
-        for (size_t i = 0; i != query_size; ++i) {
-            if (enums[i].value() == cur_doc) enums[i].next();
-            if (enums[i].value() < next_doc) {
-                next_doc = enums[i].value();
-            }
-        }
-        cur_doc = next_doc;
-    }
-
-    return size;
-}
 
 void perftest_slicing(const char* index_filename, uint32_t num_queries) {
     std::vector<term_id_vec> queries;
@@ -62,44 +37,26 @@ void perftest_slicing(const char* index_filename, uint32_t num_queries) {
     std::vector<uint32_t> out(num_docs);
     size_t total = 0;
 
-    std::vector<sliced::enumerator> enums(20);
+    std::vector<sliced::s_sequence> sequences;
 
     essentials::timer_type t;
     for (int run = 0; run != testing::runs; ++run) {
         t.start();
 
-        // 1. always next
-        // for (auto const& query : queries) {
-        //     for (uint64_t i = 0; i != query.size(); ++i) {
-        //         enums[i].init(index[query[i]], num_docs);
-        //     }
-        //     uint64_t size =
-        //         boolean_or_query(num_docs, query.size(), enums, out);
-        //     total += size;
-        // }
-
-        // 2. only pairwise
-        // for (uint32_t i = 0; i != num_queries; ++i) {
-        //     auto const& query = queries[i];
-        //     // total += sliced::pairwise_union(index[query[0]],
-        //     // index[query[1]], out.data());
-        //     enums.clear();
-        //     enums.emplace_back(query[0]);
-        //     enums.emplace_back(query[1]);
-        //     total += boolean_or_query(num_docs, enums, out);
-        // }
-
-        // 3. mixed strategy with special cases for 2 terms
-        for (auto const& query : queries) {
+        for (uint32_t i = 0; i != num_queries; ++i) {
             uint64_t size = 0;
-            if (query.size() == 2) {
-                size = sliced::pairwise_union(index[query[0]], index[query[1]],
-                                              out.data());
+            // if (queries[i].size() == 1) {
+            //     size = index[queries[i][0]].decode(out.data());
+            // } else
+            if (queries[i].size() == 2) {
+                size = sliced::pairwise_union(index[queries[i][0]],
+                                              index[queries[i][1]], out.data());
             } else {
-                for (uint64_t i = 0; i != query.size(); ++i) {
-                    enums[i].init(index[query[i]], num_docs);
+                sequences.clear();
+                for (auto term : queries[i]) {
+                    sequences.push_back(index[term]);
                 }
-                size = boolean_or_query(num_docs, query.size(), enums, out);
+                size = sliced::union_many(sequences, out.data());
             }
             total += size;
         }
