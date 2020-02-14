@@ -22,6 +22,11 @@ int main(int argc, char** argv) {
 
     binary_freq_collection input(collection_filename);
 
+    if (index_type == "slicing") {
+        verify_collection<binary_freq_collection>(input, index_filename);
+        return 0;
+    }
+
     if (false) {
 #define LOOP_BODY(R, DATA, T)                                               \
     }                                                                       \

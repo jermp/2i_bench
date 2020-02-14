@@ -19,149 +19,12 @@
 
 using namespace ds2i;
 
-size_t three_terms_and_query(sliced::s_sequence const& s1,
-                             sliced::s_sequence const& s2,
-                             sliced::s_sequence const& s3,
-                             std::vector<uint32_t>& out) {
-    uint64_t size = sliced::pairwise_intersection(s1, s2, out.data());
-    size_t k = 0;
-    for (uint64_t i = 0; i != size; ++i) {
-        uint32_t value = out[i];
-        out[k] = value;
-        k += s3.contains(value);
-    }
-    return k;
-}
-
-// version with next_geq
-size_t boolean_and_query(uint64_t num_docs,
-                         std::vector<sliced::next_geq_enumerator>& enums,
-                         std::vector<uint32_t>& out) {
-    // non-decreasing size
-    std::sort(enums.begin(), enums.end(),
-              [](auto const& l, auto const& r) { return l.size() < r.size(); });
-
-    uint64_t size = 0;
-    uint64_t candidate = enums[0].next_geq(0);
-    size_t i = 1;
-    while (candidate < num_docs) {
-        for (; i < enums.size(); ++i) {
-            uint64_t val = enums[i].next_geq(candidate);
-            if (val != candidate) {
-                candidate = val;
-                i = 0;
-                break;
-            }
-        }
-
-        if (i == enums.size()) {
-            out[size] = candidate;
-            ++size;
-            candidate = enums[0].next_geq(candidate + 1);
-            i = 1;
-        }
-    }
-
-    return size;
-}
-
-void perftest_slicing(const char* index_filename, uint32_t num_queries) {
-    std::vector<term_id_vec> queries;
-    queries.reserve(num_queries);
-    term_id_vec q;
-    while (read_query_and_remove_duplicates(q) and
-           queries.size() < num_queries) {
-        queries.push_back(q);
-    }
-
-    num_queries = queries.size();
-    std::cout << "Executing " << num_queries << " AND queries" << std::endl;
-
-    sliced::s_index index;
-    index.mmap(index_filename);
-
-    uint64_t num_docs = index.universe();
-    std::vector<uint32_t> out(num_docs);
-    size_t total = 0;
-
-    // std::vector<sliced::next_geq_enumerator> enums;
-    // std::vector<sliced::s_sequence> seqs(3);
-
-    std::vector<sliced::s_sequence> sequences;
-
-    essentials::timer_type t;
-    for (int run = 0; run != testing::runs; ++run) {
-        t.start();
-
-        // 1. always next_geq
-        // for (uint32_t i = 0; i != num_queries; ++i) {
-        //     enums.clear();
-        //     for (auto term : queries[i]) {
-        //         enums.emplace_back(index[term]);
-        //     }
-        //     uint64_t size = boolean_and_query(num_docs, enums, out);
-        //     total += size;
-        // }
-
-        // 2. only pairwise
-        // for (uint32_t i = 0; i != num_queries; ++i) {
-        //     auto const& query = queries[i];
-        //     // total += sliced::pairwise_intersection(index[query[0]],
-        //     // index[query[1]], out.data());
-        //     enums.clear();
-        //     enums.emplace_back(query[0]);
-        //     enums.emplace_back(query[1]);
-        //     total += boolean_and_query(num_docs, enums, out);
-        // }
-
-        // 3. mixed strategy with special cases for 2 and 3 terms
-        // for (uint32_t i = 0; i != num_queries; ++i) {
-        //     uint64_t size = 0;
-        //     auto const& query = queries[i];
-        //     if (query.size() == 2) {
-        //         size = sliced::pairwise_intersection(
-        //             index[query[0]], index[query[1]], out.data());
-        //     } else if (query.size() == 3) {
-        //         seqs[0] = index[query[0]];
-        //         seqs[1] = index[query[1]];
-        //         seqs[2] = index[query[2]];
-        //         std::sort(seqs.begin(), seqs.end(),
-        //                   [](auto const& l, auto const& r) {
-        //                       return l.size() < r.size();
-        //                   });
-        //         size = three_terms_and_query(seqs[0], seqs[1], seqs[2], out);
-        //     } else {
-        //         enums.clear();
-        //         for (auto term : query) {
-        //             enums.push_back(index[term]);
-        //         }
-        //         size = boolean_and_query(num_docs, enums, out);
-        //     }
-        //     total += size;
-        // }
-
-        // 4. intersection with many
-        for (uint32_t i = 0; i != num_queries; ++i) {
-            sequences.clear();
-            for (auto term : queries[i]) {
-                sequences.push_back(index[term]);
-            }
-            uint64_t size = sliced::intersection(sequences, out.data());
-            total += size;
-        }
-
-        t.stop();
-    }
-    PRINT_TIME
-}
-
 template <typename Enum>
 static uint64_t boolean_and_query(uint64_t num_docs, std::vector<Enum>& enums,
                                   std::vector<uint32_t>& out) {
     // non-decreasing size
     std::sort(enums.begin(), enums.end(),
               [](auto const& l, auto const& r) { return l.size() < r.size(); });
-
     uint64_t size = 0;
     uint64_t candidate = enums[0].docid();
     size_t i = 1;
@@ -174,17 +37,64 @@ static uint64_t boolean_and_query(uint64_t num_docs, std::vector<Enum>& enums,
                 break;
             }
         }
-
         if (i == enums.size()) {
-            out[size] = candidate;
-            ++size;
+            out[size++] = candidate;
             enums[0].next();
             candidate = enums[0].docid();
             i = 1;
         }
     }
-
     return size;
+}
+
+void perftest_slicing(const char* index_filename, uint32_t num_queries) {
+    std::vector<term_id_vec> queries;
+    queries.reserve(num_queries);
+    term_id_vec q;
+
+    uint32_t i = 0;
+    while (read_query_and_remove_duplicates(q) and
+           queries.size() < num_queries) {
+        queries.push_back(q);
+        ++i;
+    }
+
+    num_queries = queries.size();
+    std::cout << "Executing " << num_queries << " AND queries" << std::endl;
+
+    sliced::s_index index;
+    index.mmap(index_filename);
+    uint64_t num_docs = index.universe();
+    std::vector<uint32_t> out(num_docs);
+    size_t total = 0;
+
+    std::vector<sliced::s_sequence> sequences;
+
+    essentials::timer_type t;
+    for (int run = 0; run != testing::runs; ++run) {
+        t.start();
+
+        for (uint32_t i = 0; i != num_queries; ++i) {
+            uint64_t size = 0;
+            // if (queries[i].size() == 1) {
+            //     size = index[queries[i][0]].decode(out.data());
+            // } else
+            if (queries[i].size() == 2) {
+                size = sliced::pairwise_intersection(
+                    index[queries[i][0]], index[queries[i][1]], out.data());
+            } else {
+                sequences.clear();
+                for (auto term : queries[i]) {
+                    sequences.push_back(index[term]);
+                }
+                size = sliced::intersection(sequences, out.data());
+            }
+            total += size;
+        }
+
+        t.stop();
+    }
+    PRINT_TIME
 }
 
 template <typename Index>
