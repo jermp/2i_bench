@@ -26,10 +26,13 @@ for c in codecs:
 
     os.system("./build_index " + c + " " + input_filename + " --out " + index_filename + " >> " + results)
 
-    for i in xrange(0,5):
-        os.system("./and " + " " + c + " " + index_filename + " 1000 < " + querylog + " >> " + results)
+    # for i in xrange(0,5):
+    #     os.system("./and " + " " + c + " " + index_filename + " 1000 < " + querylog + " >> " + results)
 
-    for i in xrange(0,5):
-        os.system("./decode " + c + " " + index_filename + " >> " + results)
+    # for i in xrange(0,5):
+    #     os.system("./decode " + c + " " + index_filename + " >> " + results)
+
+    for i in xrange(0,3):
+        os.system("./or " + " " + c + " " + index_filename + " 1000 < " + querylog + " >> " + results)
 
     os.system("rm " + index_filename)
