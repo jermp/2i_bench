@@ -21,23 +21,22 @@ codecs = [
 
 for c in codecs:
 
-    results = output_filename + "." + c + ".results"
+    results = c + ".results"
     index_filename = output_filename + "." + c + ".bin"
 
-    # os.system("./build_index " + c + " " + collection_filename + " --out " + index_filename + " >> " + results_dirname + "/" + results)
+    os.system("./build_index " + c + " " + collection_filename + " --out " + index_filename + " >> " + results_dirname + "/" + results)
 
-    # for i in xrange(0,5):
-    #     os.system("./decode " + c + " " + index_filename + " >> " + results_dirname + "/" + results)
-
+    for i in xrange(0,5):
+        os.system("./decode " + c + " " + index_filename + " >> " + results_dirname + "/" + results)
 
     for suffix in [".2", ".3", ".4", ".5+"]:
         querylog = querylog_basename + suffix
-        for i in xrange(0,3):
+        for i in xrange(0,1):
             os.system("./and " + " " + c + " " + index_filename + " 1000 < " + querylog + " 2>> " + results_dirname + "/" + results)
 
     for suffix in [".2", ".3", ".4", ".5+"]:
         querylog = querylog_basename + suffix
-        for i in xrange(0,3):
+        for i in xrange(0,1):
             os.system("./or " + " " + c + " " + index_filename + " 1000 < " + querylog + " 2>> " + results_dirname + "/" + results)
 
     # os.system("rm " + index_filename)

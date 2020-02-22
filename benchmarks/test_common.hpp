@@ -10,7 +10,7 @@ namespace ds2i {
 
 namespace testing {
 // first run is for warming up
-static const int runs = 5 + 1;
+static const int runs = 3 + 1;
 }  // namespace testing
 
 bool read_query_and_remove_duplicates(term_id_vec& ret,
