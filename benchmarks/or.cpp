@@ -167,6 +167,7 @@ int main(int argc, const char** argv) {
 
     if (index_type == "slicing") {
         perftest_slicing(index_filename, num_queries, log);
+        log.print();
         return 0;
     }
 
@@ -182,6 +183,6 @@ int main(int argc, const char** argv) {
     } else {
         logger() << "ERROR: Unknown index type " << index_type << std::endl;
     }
-
+    log.print();
     return 0;
 }
