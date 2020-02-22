@@ -1,15 +1,15 @@
 import sys, os
 
-input_filename = sys.argv[1]
+collection_filename = sys.argv[1]
 output_filename = sys.argv[2]
-querylog = sys.argv[3]
+querylog_basename = sys.argv[3]
+results_dirname = sys.argv[4]
 
 codecs = [
 "maskedvbyte",
 "opt_vbyte",
 "bic",
 "delta",
-"opt_delta",
 "rice",
 "pef_opt",
 "single_packed_dint",
@@ -24,15 +24,20 @@ for c in codecs:
     results = output_filename + "." + c + ".results"
     index_filename = output_filename + "." + c + ".bin"
 
-    os.system("./build_index " + c + " " + input_filename + " --out " + index_filename + " >> " + results)
+    # os.system("./build_index " + c + " " + collection_filename + " --out " + index_filename + " >> " + results_dirname + "/" + results)
 
     # for i in xrange(0,5):
-    #     os.system("./and " + " " + c + " " + index_filename + " 1000 < " + querylog + " >> " + results)
+    #     os.system("./decode " + c + " " + index_filename + " >> " + results_dirname + "/" + results)
 
-    # for i in xrange(0,5):
-    #     os.system("./decode " + c + " " + index_filename + " >> " + results)
 
-    for i in xrange(0,3):
-        os.system("./or " + " " + c + " " + index_filename + " 1000 < " + querylog + " >> " + results)
+    for suffix in [".2", ".3", ".4", ".5+"]:
+        querylog = querylog_basename + suffix
+        for i in xrange(0,3):
+            os.system("./and " + " " + c + " " + index_filename + " 1000 < " + querylog + " 2>> " + results_dirname + "/" + results)
 
-    os.system("rm " + index_filename)
+    for suffix in [".2", ".3", ".4", ".5+"]:
+        querylog = querylog_basename + suffix
+        for i in xrange(0,3):
+            os.system("./or " + " " + c + " " + index_filename + " 1000 < " + querylog + " 2>> " + results_dirname + "/" + results)
+
+    # os.system("rm " + index_filename)

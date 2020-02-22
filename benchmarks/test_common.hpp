@@ -4,6 +4,7 @@ typedef uint32_t term_id_type;
 typedef std::vector<term_id_type> term_id_vec;
 
 #include "../include/ds2i/queries.hpp"
+#include "../external/essentials/include/essentials.hpp"
 
 namespace ds2i {
 
@@ -30,7 +31,7 @@ bool read_query_and_remove_duplicates(term_id_vec& ret,
     succinct::mapper::map(index, m);
 
 #define PRINT_TIME                                                  \
-    std::cout << total << std::endl;                                \
+    std::cout << "Ignore: " << total << std::endl;                  \
     t.discard_first();                                              \
     double avg = t.average();                                       \
     std::cout << "Mean per run: " << avg / 1000 << " [millisec]\n"; \

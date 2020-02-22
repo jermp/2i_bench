@@ -13,3 +13,6 @@
 [submodule "external/succinct"]
 	path = external/succinct
 	url = https://github.com/ot/succinct.git
+[submodule "external/essentials"]
+	path = external/essentials
+	url = https://github.com/jermp/essentials.git

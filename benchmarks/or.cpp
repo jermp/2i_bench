@@ -9,7 +9,6 @@
 #include "util.hpp"
 #include "test_common.hpp"
 
-#include "../external/s_indexes/external/essentials/include/essentials.hpp"
 #include "../external/s_indexes/include/util.hpp"
 #include "../external/s_indexes/include/s_index.hpp"
 #include "../external/s_indexes/include/union.hpp"
@@ -18,7 +17,8 @@
 
 using namespace ds2i;
 
-void perftest_slicing(const char* index_filename, uint32_t num_queries) {
+void perftest_slicing(const char* index_filename, uint32_t num_queries,
+                      essentials::json_lines& log) {
     std::vector<term_id_vec> queries;
     queries.reserve(num_queries);
     term_id_vec q;
@@ -28,7 +28,9 @@ void perftest_slicing(const char* index_filename, uint32_t num_queries) {
     }
 
     num_queries = queries.size();
-    std::cout << "Executing " << num_queries << " OR queries" << std::endl;
+    log.add("num_queries", std::to_string(num_queries));
+    // assume all queries have the same number of terms...
+    log.add("query_terms", std::to_string(queries.front().size()));
 
     sliced::s_index index;
     index.mmap(index_filename);
@@ -39,6 +41,7 @@ void perftest_slicing(const char* index_filename, uint32_t num_queries) {
 
     std::vector<sliced::s_sequence> sequences;
 
+    std::cout << "Executing " << num_queries << " OR queries" << std::endl;
     essentials::timer_type t;
     for (int run = 0; run != testing::runs; ++run) {
         t.start();
@@ -64,6 +67,9 @@ void perftest_slicing(const char* index_filename, uint32_t num_queries) {
         t.stop();
     }
     PRINT_TIME
+
+    double avg_ms_per_query = (avg / num_queries) / 1000;
+    log.add("avg_ms_per_query", std::to_string(avg_ms_per_query));
 }
 
 template <typename Enum>
@@ -90,7 +96,8 @@ size_t boolean_or_query(uint32_t num_docs, std::vector<Enum>& enums,
 }
 
 template <typename Index>
-void perftest(const char* index_filename, uint32_t num_queries) {
+void perftest(const char* index_filename, uint32_t num_queries,
+              essentials::json_lines& log) {
     using namespace ds2i;
 
     LOAD_INDEX
@@ -104,7 +111,9 @@ void perftest(const char* index_filename, uint32_t num_queries) {
     }
 
     num_queries = queries.size();
-    std::cout << "Executing " << num_queries << " OR queries" << std::endl;
+    log.add("num_queries", std::to_string(num_queries));
+    // assume all queries have the same number of terms...
+    log.add("query_terms", std::to_string(queries.front().size()));
 
     uint64_t num_docs = index.num_docs();
     std::vector<uint32_t> out(num_docs);
@@ -113,6 +122,7 @@ void perftest(const char* index_filename, uint32_t num_queries) {
     typedef typename Index::document_enumerator enum_type;
     std::vector<enum_type> qq;
 
+    std::cout << "Executing " << num_queries << " OR queries" << std::endl;
     essentials::timer_type t;
     for (int run = 0; run != testing::runs; ++run) {
         t.start();
@@ -130,6 +140,9 @@ void perftest(const char* index_filename, uint32_t num_queries) {
         t.stop();
     }
     PRINT_TIME
+
+    double avg_ms_per_query = (avg / num_queries) / 1000;
+    log.add("avg_ms_per_query", std::to_string(avg_ms_per_query));
 }
 
 int main(int argc, const char** argv) {
@@ -147,16 +160,21 @@ int main(int argc, const char** argv) {
     const char* index_filename = argv[2];
     uint32_t num_queries = std::atoi(argv[3]);
 
+    essentials::json_lines log;
+    log.new_line();
+    log.add("index_type", index_type);
+    log.add("query_type", "or");
+
     if (index_type == "slicing") {
-        perftest_slicing(index_filename, num_queries);
+        perftest_slicing(index_filename, num_queries, log);
         return 0;
     }
 
     if (false) {
-#define LOOP_BODY(R, DATA, T)                                           \
-    }                                                                   \
-    else if (index_type == BOOST_PP_STRINGIZE(T)) {                     \
-        perftest<BOOST_PP_CAT(T, _index)>(index_filename, num_queries); \
+#define LOOP_BODY(R, DATA, T)                                                \
+    }                                                                        \
+    else if (index_type == BOOST_PP_STRINGIZE(T)) {                          \
+        perftest<BOOST_PP_CAT(T, _index)>(index_filename, num_queries, log); \
         /**/
 
         BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, DS2I_INDEX_TYPES);

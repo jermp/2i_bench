@@ -10,7 +10,6 @@
 #include "test_common.hpp"
 
 #include "../external/s_indexes/external/mm_file/include/mm_file/mm_file.hpp"
-#include "../external/s_indexes/external/essentials/include/essentials.hpp"
 #include "../external/s_indexes/include/util.hpp"
 #include "../external/s_indexes/include/s_index.hpp"
 #include "../external/s_indexes/include/next_geq_enumerator.hpp"

@@ -12,7 +12,7 @@
 #include "verify_collection.hpp"
 #include "index_build_utils.hpp"
 
-#include "../external/s_indexes/external/essentials/include/essentials.hpp"
+#include "../external/essentials/include/essentials.hpp"
 #include "../external/s_indexes/include/s_index.hpp"
 #include "../external/s_indexes/include/builder.hpp"
 
@@ -29,7 +29,7 @@ void create_collection_slicing(sliced::parameters const& params,
               << std::endl;
     stats.print();
     if (output_filename) {
-        essentials::print_size(builder);
+        essentials::print_size(builder, std::cout);
         essentials::save<builder_type>(builder, output_filename);
     }
 }

@@ -9,7 +9,6 @@
 #include "util.hpp"
 #include "test_common.hpp"
 
-#include "../external/s_indexes/external/essentials/include/essentials.hpp"
 #include "../external/s_indexes/include/util.hpp"
 #include "../external/s_indexes/include/s_index.hpp"
 #include "../external/s_indexes/include/select.hpp"
