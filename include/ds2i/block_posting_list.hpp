@@ -110,7 +110,7 @@ struct block_posting_list {
             BlockCodec::decode(ptr, out, max - cur_base - (block_size - 1),
                                block_size);
 
-            // PREFIX_SUM
+            PREFIX_SUM
 
             endpoint = ((uint32_t const*)block_endpoints)[i];
             out += block_size;
@@ -123,7 +123,7 @@ struct block_posting_list {
         uint32_t size = n - (blocks - 1) * block_size;
         BlockCodec::decode(ptr, out, max - cur_base - (size - 1), size);
 
-        // PREFIX_SUM
+        PREFIX_SUM
 
         out += size;
         return uint32_t(out - in);

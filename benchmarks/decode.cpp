@@ -13,9 +13,9 @@
 #include "../external/s_indexes/include/s_index.hpp"
 #include "../external/s_indexes/include/decode.hpp"
 
-#define INDEXES                                                              \
-    (pef_uniform)(pef_opt)(bic)(maskedvbyte)(optpfor)(simple16)(qmx)(delta)( \
-        opt_delta)(delta_table)(rice)(single_packed_dint)(opt_vbyte)
+#define INDEXES                                                       \
+    (pef_opt)(bic)(maskedvbyte)(optpfor)(simple16)(qmx)(delta)(rice)( \
+        single_packed_dint)(opt_vbyte)
 
 void perftest_slicing(char const* index_filename) {
     using namespace sliced;
@@ -27,7 +27,7 @@ void perftest_slicing(char const* index_filename) {
     uint64_t integers = 0;
     essentials::timer_type t;
 
-    std::cout << "Decoding" << std::endl;
+    std::cout << "Decoding..." << std::endl;
     t.start();
     for (size_t i = 0; i != index.size(); ++i) {
         auto sequence = index[i];
@@ -35,11 +35,10 @@ void perftest_slicing(char const* index_filename) {
         integers += decoded;
     }
     t.stop();
-
     std::cout << "decoded " << index.size() << " sequences" << std::endl;
     std::cout << "decoded " << integers << " integers" << std::endl;
 
-    double elapsed = t.average();
+    double elapsed = t.elapsed();
     std::cout << "Elapsed time: " << elapsed / 1000000 << " [sec]\n";
     std::cout << "Mean per sequence: " << elapsed / index.size()
               << " [musec]\n";
@@ -57,18 +56,19 @@ void perftest(const char* index_filename) {
     uint64_t integers = 0;
     essentials::timer_type t;
 
-    std::cout << "Decoding" << std::endl;
-    t.start();
+    std::cout << "Decoding..." << std::endl;
     for (uint64_t i = 0; i != index.size(); ++i) {
+        t.start();
         uint32_t decoded = index.decode(i, out.data());
+        t.stop();
         integers += decoded;
+        memset(out.data(), 0, decoded * sizeof(uint32_t));
     }
-    t.stop();
 
     std::cout << "decoded " << index.size() << " sequences" << std::endl;
     std::cout << "decoded " << integers << " integers" << std::endl;
 
-    double elapsed = t.average();
+    double elapsed = t.elapsed();
     std::cout << "Elapsed time: " << elapsed / 1000000 << " [sec]\n";
     std::cout << "Mean per sequence: " << elapsed / index.size()
               << " [musec]\n";

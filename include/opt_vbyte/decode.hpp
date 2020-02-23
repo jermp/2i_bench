@@ -6,6 +6,12 @@
 
 namespace pvb {
 
+#define PVB_PREFIX_SUM                                    \
+    out[0] += base;                                       \
+    for (uint32_t k = 1; k != Encoder::block_size; ++k) { \
+        out[k] += out[k - 1] + 1;                         \
+    }
+
 template <typename Encoder, typename Iterator>
 uint32_t decode_sequence(Iterator& it, uint32_t* out) {
     uint32_t partitions = it.m_partitions;
@@ -33,7 +39,7 @@ uint32_t decode_sequence(Iterator& it, uint32_t* out) {
             case indexed_sequence_t::index_type::ranked_bitvector:
                 bv_enum = compact_ranked_bitvector::enumerator(
                     *it.m_bv, it.m_sequences_offset + it.m_endpoint + type_bits,
-                    it.m_cur_upper_bound - it.m_cur_base + 1, n, *it.m_params);
+                    it.m_cur_upper_bound - base + 1, n, *it.m_params);
                 compact_ranked_bitvector::decode(bv_enum, base, out);
                 break;
             case indexed_sequence_t::index_type::third: {
@@ -49,7 +55,7 @@ uint32_t decode_sequence(Iterator& it, uint32_t* out) {
                 uint8_t const* addr =
                     reinterpret_cast<uint8_t const*>((it.m_bv)->data().data()) +
                     offset / 8;
-                uint64_t universe = it.m_cur_upper_bound - it.m_cur_base + 1;
+                uint64_t universe = it.m_cur_upper_bound - base + 1;
 
                 if (Encoder::is_byte_aligned) {
                     Encoder::decode(addr, out, universe, n);
@@ -62,6 +68,8 @@ uint32_t decode_sequence(Iterator& it, uint32_t* out) {
                     uint32_t tail = n - blocks * Encoder::block_size;
                     Encoder::decode(addr, out, universe, tail);
                 }
+
+                PVB_PREFIX_SUM
 
             } break;
             default:

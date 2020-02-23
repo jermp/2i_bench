@@ -15,7 +15,8 @@ codecs = [
 "single_packed_dint",
 "optpfor",
 "simple16",
-"qmx",
+"qmx"
+,
 "slicing"
 ]
 
