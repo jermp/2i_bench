@@ -34,3 +34,7 @@ target_link_libraries(dict_perf_test
 
 add_executable(filter_queries filter_queries.cpp)
 add_executable(filter_lists filter_lists.cpp)
+add_executable(print_statistics print_statistics.cpp)
+target_link_libraries(print_statistics
+  ${Boost_LIBRARIES}
+  )
