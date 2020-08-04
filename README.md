@@ -8,4 +8,4 @@ A more informative readme is coming soon.
 
 References
 -------
-* [1] Giulio Ermanno Pibiri and Rossano Venturini. *Techniques for Inverted Index Compression*. 2019. arXiv preprint. [https://arxiv.org/abs/1908.10598](https://arxiv.org/abs/1908.10598)
+* [1] Giulio Ermanno Pibiri and Rossano Venturini. *Techniques for Inverted Index Compression*. 2020. ACM Computing Surveys (CSUR). [https://arxiv.org/abs/1908.10598v2](https://arxiv.org/abs/1908.10598v2)
